@@ -1,0 +1,340 @@
+---
+title: "DESeq2 bulk-RNAseq dataset GSE160156, Cell type `r params$cell.type`, Pair: `r params$sample.type1`,`r params$sample.type2`"
+author:
+  - "trnguyen@ukaachen.de"
+date: "Last update on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float:
+      toc_collapsed: false
+    toc_depth: 3
+    number_sections: false
+    theme: lumen
+params:
+  cell.type: NA
+  sample.type1: NA
+  sample.type2: NA
+  cutoff.logFC: NA
+  cutoff.adjp: NA
+---
+
+### [Back to front page](main.html)
+
+
+```{r preparation, results = 'asis', echo=FALSE, message=FALSE, include=FALSE}
+
+path.to.project.src <- "/media/hieunguyen/HNSD01/src/migratory_ccr7_data_analysis/bulkRNAseq_data"
+
+source(file.path(path.to.project.src, "import_libraries.R"))
+source(file.path(path.to.project.src, "helper_functions.R"))
+
+path.to.storage <- "/media/hieunguyen/HNSD01/storage"
+PROJECT <- "FHager_datasets"
+
+path.to.count.matrix <- file.path(path.to.storage, PROJECT, "GSE160156/GSE160156_read_counts_DC.csv")
+
+df <- data.frame(vroom(path.to.count.matrix, show_col_types = FALSE))
+
+row.names(df) <- df[[1]]
+
+df <- df[-1]
+
+keep <- rowSums(df) >= 100
+
+df <- df[keep,]
+
+coldata <- vroom(file.path(path.to.project.src, "input_data", "sample_sheet_GSE160156.csv"), delim = ",")
+
+coldata <- transform( coldata, group = as.factor(group))
+
+metadata <- vroom(file.path(path.to.project.src, "input_data", "sample_sheet_GSE160156.csv"), delim = ",")
+
+# outdir <- "/media/hieunguyen/HD0/outdir/CRC1382/FHager_datasets"
+outdir <- "/media/hieunguyen/HNSD01/outdir"
+output.version <- "20240723"
+
+path.to.tx2gene <- file.path(path.to.project.src, "input_data", "salmon_tx2gene.tsv")
+
+#####----------------------------------------------------------------------#####
+# Use this cell to control which pair of samples we want to compare / perform
+# differential expression analysis. Simply filter the input metatada, keep only
+# those you want to compare.
+#####----------------------------------------------------------------------#####
+cell.type <- params$cell.type
+sample.type1 <- params$sample.type1
+sample.type2 <- params$sample.type2
+cutoff.logFC <- params$cutoff.logFC
+cutoff.adjp <- params$cutoff.adjp
+
+# cell.type <- "CD103"
+# sample.type1 <- "LP"
+# sample.type2 <- "mLN"
+# cutoff.logFC <- 1
+# cutoff.adjp <- 0.01
+
+filtered.metadata <- subset(metadata, metadata$cell == cell.type)
+
+
+saved_Rdata_dir <- file.path(outdir, output.version, sprintf("GSE160156_p_%s_FC_%s", cutoff.adjp, cutoff.logFC))
+dir.create(saved_Rdata_dir, showWarnings = FALSE, recursive = TRUE)
+
+filtered.metadata <- subset(filtered.metadata, filtered.metadata$group %in% c(sample.type1, sample.type2))
+
+filtered.metadata$group <- factor(filtered.metadata$group, levels = c(sample.type1, sample.type2))
+
+##### MAIN DESEQ COMMAND
+deseq.dataset <- DESeqDataSetFromMatrix(countData = df[filtered.metadata$sample],
+                                 colData = filtered.metadata,
+                                 design = ~ group)
+
+```
+
+`DESeq2` summary: Details about the comparison performed by `DESeq2` are shown here: The text `log2 fold change (MLE)`, e.g `group A vs B`, tells you that the estimates are **logarithmic fold change log2(A/B)**.
+
+- **Positive** log2FC indicates that the gene is up-regulated in **group A**.
+
+- **Negative** log2FC indicates that the gene is up-regulated in **group B**. 
+
+# DESeq2 configurations and structure of DESeq2 output
+```{r results = 'asis', echo=FALSE, warning=FALSE, message=FALSE}
+tx2gene <- read_tsv(path.to.tx2gene, 
+                    col_names = c("transcript_id", "gene_id", "gene_name"), 
+                    show_col_types = FALSE)
+
+deseq_res_config <- results(DESeq(deseq.dataset))
+
+for (item in deseq_res_config@elementMetadata@listData$description){
+  print(item)
+  cat("\n")
+}
+```
+
+
+```{r results = 'asis', echo=FALSE, warning=FALSE, message=FALSE}
+print(sprintf("Cut-off log2FC: %s \n", cutoff.logFC))
+```
+
+
+```{r results = 'asis', echo=FALSE, warning=FALSE, message=FALSE}
+print(sprintf("Cut-off Adjusted p-value: %s \n", cutoff.adjp))
+
+
+```
+
+```{r results = 'asis', echo=FALSE, message=FALSE, include=FALSE}
+deseq.output <- run_DESeq2_and_preprocess(deseq.dataset, tx2gene, thresh.pval = cutoff.adjp, gene_name_annotation = "EnsDb")
+
+basic.output <- basic.analysis(deseq.output, 
+                               filtered.metadata,
+                               cell.type,
+                               sample.type1,
+                               sample.type2,
+                               cutoff.logFC = cutoff.logFC, 
+                               cutoff.adjp = cutoff.adjp)
+
+```
+
+# PCA scatter plot, Volcano plot and MA plot {.tabset}
+## PCA
+```{r plotPCA, results = 'asis', echo=FALSE, message=FALSE}
+basic.output$pca.plot
+```
+
+## Volcano plot 
+```{r plotVolcano, results = 'asis', echo=FALSE, message=FALSE}
+basic.output$volcano.plot
+```
+
+## MA plot
+```{r plotMA, results = 'asis', echo=FALSE, message=FALSE}
+basic.output$ma.plot
+```
+
+## Cooks distance boxplot
+```{r cooks_distance, results = 'asis', echo=FALSE, message=FALSE}
+boxplot(assays(deseq.output$deseq.object)[["cooks"]])
+```
+
+# Differentially expressed genes 
+
+```{r generate_DE_results, results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+library(hash)
+
+all.basic.outputs <- hash()
+
+for (cutoff in c(1, 2, 3,4,5)){
+  # for (cutoff in c(0)){
+  basic.output <- basic.analysis(deseq.output, 
+                                 filtered.metadata,
+                                 cell.type,
+                                 sample.type1,
+                                 sample.type2,
+                                 cutoff.logFC = cutoff, 
+                                 cutoff.adjp = 0.05)
+  
+  all.basic.outputs[[paste0("Cutoff_", cutoff)]] <- basic.output
+}
+
+```
+
+
+## Significant DE genes with higher-than-cutoff logFC
+
+### Heatmaps {.tabset}
+#### LogFC Cut-off 1 {.unlisted .unnumbered}
+```{r plotHeatmap, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_1$sig.gene.heatmap
+
+```
+#### LogFC Cut-off 2 {.unlisted .unnumbered}
+```{r plotHeatmap2, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_2$sig.gene.heatmap
+
+```
+#### LogFC Cut-off 3 {.unlisted .unnumbered}
+```{r plotHeatmap3, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_3$sig.gene.heatmap
+
+```
+#### LogFC Cut-off 4 {.unlisted .unnumbered}
+```{r, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_4$sig.gene.heatmap
+
+```
+
+#### LogFC Cut-off 5 {.unlisted .unnumbered}
+```{r plotHeatmap4, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_5$sig.gene.heatmap
+
+```
+
+
+### Tables {.tabset}
+#### LogFC Cut-off 1 {.unlisted .unnumbered}
+```{r table1, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_1$sig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+#### LogFC Cut-off 2 {.unlisted .unnumbered}
+```{r table2, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_2$sig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+
+#### LogFC Cut-off 3 {.unlisted .unnumbered}
+```{r table3, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_3$sig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+
+#### LogFC Cut-off 4 {.unlisted .unnumbered}
+```{r table4, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_4$sig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+#### LogFC Cut-off 5 {.unlisted .unnumbered}
+```{r table5, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_5$sig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+## Non-significant DE genes with higher-than-cutoff logFC
+### Heatmaps {.tabset}
+#### LogFC Cut-off 1 {.unlisted .unnumbered}
+```{r nonsigHeatmap1, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+
+all.basic.outputs$Cutoff_1$nonsig.gene.heatmap
+
+```
+#### LogFC Cut-off 2 {.unlisted .unnumbered}
+```{r nonsigHeatmap2, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+
+all.basic.outputs$Cutoff_2$nonsig.gene.heatmap
+
+```
+#### LogFC Cut-off 3 {.unlisted .unnumbered}
+```{r nonsigHeatmap3, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+
+all.basic.outputs$Cutoff_3$nonsig.gene.heatmap
+
+```
+#### LogFC Cut-off 4 {.unlisted .unnumbered}
+```{r nonsigHeatmap4, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+
+all.basic.outputs$Cutoff_4$nonsig.gene.heatmap
+
+```
+#### LogFC Cut-off 5 {.unlisted .unnumbered}
+```{r nonsigHeatmap5, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+
+all.basic.outputs$Cutoff_5$nonsig.gene.heatmap
+
+```
+
+
+### Tables {.tabset}
+#### LogFC Cut-off 1 {.unlisted .unnumbered}
+```{r nonsigTable1, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_1$nonsig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+#### LogFC Cut-off 2 {.unlisted .unnumbered}
+```{r nonsigTable2, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_2$nonsig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+
+#### LogFC Cut-off 3 {.unlisted .unnumbered}
+```{r nonsigTable3, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_3$nonsig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+
+#### LogFC Cut-off 4 {.unlisted .unnumbered}
+```{r nonsigTable4, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_4$nonsig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+#### LogFC Cut-off 5 {.unlisted .unnumbered}
+```{r nonsigTable5, results = 'asis', echo=FALSE, message=FALSE, warning=FALSE}
+all.basic.outputs$Cutoff_5$nonsig.genes.with.highlogFC %>% mutate_if(is.numeric, round, digits = 4) %>% create_dt()
+```
+
+```{r savedata, echo=FALSE, message=FALSE, include=FALSE}
+#########################################################################
+# Save data
+#########################################################################
+
+for (val in names(all.basic.outputs)){
+  dir.create(file.path(saved_Rdata_dir, sprintf("%s_%s_vs_%s", cell.type, sample.type1, sample.type2)),
+             showWarnings = FALSE)
+
+  sig.genes.at.logFC <- all.basic.outputs[[val]]$sig.genes.with.highlogFC$gene_id
+
+  saveRDS(object = sig.genes.at.logFC,
+          file = file.path(saved_Rdata_dir, sprintf("%s_%s_vs_%s", cell.type, sample.type1, sample.type2),
+                           sprintf("sig_genes_%s_%s_vs_%s_logFC_%s.rds", cell.type, sample.type1, sample.type2, val)))
+  
+  write.csv(all.basic.outputs[[val]]$sig.genes.with.highlogFC, 
+            file.path(saved_Rdata_dir, sprintf("%s_%s_vs_%s", cell.type, sample.type1, sample.type2),
+                     sprintf("full_table_sig_genes_%s_%s_vs_%s_logFC_%s.csv", cell.type, sample.type1, sample.type2, val)))
+
+  nonsig.genes.at.logFC <- all.basic.outputs[[val]]$nonsig.genes.with.highlogFC$gene_id
+
+  saveRDS(object = nonsig.genes.at.logFC,
+          file = file.path(saved_Rdata_dir, sprintf("%s_%s_vs_%s", cell.type, sample.type1, sample.type2),
+                           sprintf("nonsig_genes_%s_%s_vs_%s_logFC_%s.rds", cell.type, sample.type1, sample.type2, val)))
+  
+  write.csv(all.basic.outputs[[val]]$nonsig.genes.with.highlogFC, 
+            file.path(saved_Rdata_dir, sprintf("%s_%s_vs_%s", cell.type, sample.type1, sample.type2),
+                     sprintf("full_table_nonsig_genes_%s_%s_vs_%s_logFC_%s.csv", cell.type, sample.type1, sample.type2, val)))
+}
+
+saveRDS(object = deseq.output$all.resultdf,
+        file = file.path(saved_Rdata_dir, sprintf("%s_%s_vs_%s", cell.type, sample.type1, sample.type2),
+                         sprintf("DESEQ_res_%s_%s_vs_%s.rds", cell.type, sample.type1, sample.type2)))
+
+saveRDS(deseq.output$norm.count, file.path(saved_Rdata_dir, sprintf("%s_%s_vs_%s", cell.type, sample.type1, sample.type2), "norm_count.rds"))
+```
+

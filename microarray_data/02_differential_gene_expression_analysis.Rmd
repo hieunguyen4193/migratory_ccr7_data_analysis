@@ -1,0 +1,241 @@
+---
+title: "Dataset GSE71170 (microarray, Lung (Immature/Mature), Thymus (Immature, Mature))"
+author:
+  - "trnguyen@ukaachen.de"
+date: "Last update on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    df_print: paged
+    toc: true
+    toc_float:
+      toc_collapsed: false
+    toc_depth: 3
+    number_sections: false
+    theme: lumen
+---
+
+Raw data GSE71170 (`.CEL` files) were downloaded from https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE71171
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+gc()
+rm(list = ls())
+
+path.to.project.src <- "/media/hieunguyen/HNSD01/src/migratory_ccr7_data_analysis/microarray_data"
+source(file.path(path.to.project.src, "import_libraries.R"))
+
+dataset_gse <- "GSE71170"
+output.version <- "20240723"
+
+outdir <- "/media/hieunguyen/HNSD01/outdir"
+PROJECT <- "FHager_datasets"
+
+path.to.main.output <- file.path(outdir, PROJECT, output.version, "microarray_output", dataset_gse)
+dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
+
+path.to.01.output <- file.path(path.to.main.output, "01_output")
+
+path.to.02.output <- file.path(path.to.main.output, "02_output")
+dir.create(path.to.02.output, showWarnings = FALSE, recursive = TRUE)
+
+#####----------------------------------------------------------------------#####
+##### Helper function for create_dt
+#####----------------------------------------------------------------------#####
+create_dt <- function(x){
+  DT::datatable(x,
+                extensions = 'Buttons',
+                filter = "top",
+                options = list(dom = 'Blfrtip',
+                               buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                               lengthMenu = list(c(10,25,50,-1),
+                                                 c(10,25,50,"All")),
+                               columnDefs = list(list(
+                                 targets = "_all",
+                                 render = JS(
+                                   "function(data, type, row, meta) {",
+                                   "return type === 'display' && data != null && data.length > 100 ?",
+                                   "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;",
+                                   "}")
+                               ))
+                ))
+}
+#####----------------------------------------------------------------------#####
+
+thymus.rma.data <- readRDS(file.path(path.to.01.output, "thymus_rma_calibrated_data_object.rds"))
+thymus.rma.exprs <- readRDS(file.path(path.to.01.output, "thymus_rma_calibrated_data_exprs_table.rds"))
+colnames(thymus.rma.exprs) <- to_vec(for (item in colnames(thymus.rma.exprs)) str_split(item, "_")[[1]][[1]])
+
+lung.rma.data <- readRDS(file.path(path.to.01.output, "lung_rma_calibrated_data_object.rds"))
+lung.rma.exprs <- readRDS(file.path(path.to.01.output, "lung_rma_calibrated_data_exprs_table.rds"))
+colnames(lung.rma.exprs) <- to_vec(for (item in colnames(lung.rma.exprs)) str_split(item, "_")[[1]][[1]])
+
+library(tidyverse)
+library(dplyr)
+
+GPL6246 <- readRDS(file.path(path.to.01.output, "GPL6246_preprocessed.rds"))
+GPL1261 <- readRDS(file.path(path.to.01.output, "GPL1261_preprocessed.rds"))
+```
+
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+```
+
+# Lung samples
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+#####----------------------------------------------------------------------#####
+# LUNG SAMPLES
+#####----------------------------------------------------------------------#####
+lung.design.matrix <- model.matrix(~ 0 + pData(lung.rma.data)$Status)
+
+colnames(lung.design.matrix) <- c("Immature", "Mature")
+
+# logFC = Immature / Mature, in this makeConstrast function we will also define
+# the order of the logFC.
+lung.contrast_matrix <- makeContrasts(Mature-Immature, levels = lung.design.matrix) 
+
+lung_fit <- eBayes(contrasts.fit(lmFit(lung.rma.data,
+                                       design = lung.design.matrix), lung.contrast_matrix))
+
+lung_DE_table <- topTable(lung_fit, number = Inf)
+
+lung_DE_table <- lung_DE_table %>% 
+  rownames_to_column("Gene.ID") %>% 
+  rowwise %>% mutate(abs_log2FC = abs(logFC)) %>% 
+  arrange(desc(abs_log2FC)) %>% mutate(Gene = paste(subset(GPL6246, GPL6246$PROBEID == Gene.ID)$SYMBOL, collapse = ", "))
+
+
+```
+
+## Metadata
+Metadata was downloaded from https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-GEOD-71170#
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+pData(lung.rma.data) %>% rownames_to_column("Filename") %>% rowwise %>% mutate(Sample.name = str_split(Filename, "_")[[1]][[1]]) %>%
+  subset(select = c(Sample.name, Status, Filename))%>% create_dt()
+```
+
+## Differential gene expression results
+
+The log2FC is calculated as `Mature` over `Immature`;
+
+- **Positive** `log2FC` indicates that the gene is **up-regulated** in **Mature** samples
+
+- **Negative** `log2FC` indicates that the gene is **up-regulated** in **Immature** samples
+
+Genes having **adjusted P-value** (Benjamin - Hochberg false discovery rate correction) **less than 0.05** and **log2FC greater than 1** are called significant DE genes and listed in the following table.
+
+Table is sorted in descending order of absolute value of log2FC.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+lung_DE_table <- lung_DE_table %>% subset(select = c(Gene.ID, logFC, AveExpr, P.Value, adj.P.Val, abs_log2FC, Gene))
+lung_DE_table <- merge(lung_DE_table, lung.rma.exprs, by.x = "Gene.ID", by.y = 0)
+
+lung_DE_table <- lung_DE_table %>% subset(adj.P.Val < 0.05 & abs_log2FC >= 1) 
+lung_DE_table %>% mutate_if(is.numeric, round, 6) %>% arrange(desc(abs_log2FC))%>% create_dt()
+
+```
+
+<!-- ## Volcano plot -->
+
+<!-- ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'} -->
+<!-- input.df <- lung_DE_table -->
+
+<!-- input.df <- input.df %>% rowwise %>% mutate(sig = ifelse(adj.P.Val <= 0.05 & abs_log2FC >= 1, "Significant", "Not significant")) -->
+<!-- volcano.plot <- ggplot(data=input.df,  -->
+<!--                        aes(x=logFC, y=-log10(adj.P.Val), col=sig, label=Gene)) +  -->
+<!--   geom_point() +  -->
+<!--   scale_color_manual(values=c("#c0d2f0", "#f28095")) + -->
+<!--   theme_minimal() + -->
+<!--   geom_vline(xintercept=c(-1, 1), col="#9a9fa6", linetype='dotted') + -->
+<!--   geom_hline(yintercept=-log10(0.05), col="#9a9fa6", linetype='dotted') + -->
+<!--   xlim(-5, 5) + ylim(0, 4) +  -->
+<!--   theme_bw() +  -->
+<!--   theme(plot.title = element_text(hjust=0.5, face="bold", size = 12)) -->
+
+<!-- volcano.plotly <- ggplotly(volcano.plot,  tooltip = c("x", "y", "label")) -->
+
+<!-- volcano.plotly -->
+<!-- ``` -->
+
+
+# Thymus samples
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+#####----------------------------------------------------------------------#####
+# thymus SAMPLES
+#####----------------------------------------------------------------------#####
+thymus.design.matrix <- model.matrix(~ 0 + pData(thymus.rma.data)$Status)
+
+colnames(thymus.design.matrix) <- c("Immature", "Mature")
+
+# logFC = Immature / Mature
+thymus.contrast_matrix <- makeContrasts(Mature-Immature, levels = thymus.design.matrix)
+
+thymus_fit <- eBayes(contrasts.fit(lmFit(thymus.rma.data,
+                                       design = thymus.design.matrix), thymus.contrast_matrix))
+
+thymus_DE_table <- topTable(thymus_fit, number = Inf)
+
+thymus_DE_table <- thymus_DE_table %>% 
+  rownames_to_column("Gene.ID") %>% 
+  rowwise %>% mutate(abs_log2FC = abs(logFC)) %>% 
+  arrange(desc(abs_log2FC)) %>% mutate(Gene = paste(subset(GPL1261, GPL1261$ID == Gene.ID)$Gene.Symbol, collapse = ", "))
+```
+
+## Metadata
+Metadata was downloaded from https://www.ebi.ac.uk/biostudies/arrayexpress/studies/E-GEOD-71170#
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+pData(thymus.rma.data) %>% rownames_to_column("Filename") %>% rowwise %>% mutate(Sample.name = str_split(Filename, "_")[[1]][[1]]) %>%
+  subset(select = c(Sample.name, Status, Filename))%>% create_dt()
+```
+
+## Differential gene expression results
+
+The log2FC is calculated as `Immature` over `Mature`;
+
+- **Positive** `log2FC` indicates that the gene is **up-regulated** in **Mature** samples
+
+- **Negative** `log2FC` indicates that the gene is **up-regulated** in **Immature** samples
+
+Genes having **adjusted P-value** (Benjamin - Hochberg false discovery rate correction) **less than 0.05** and **log2FC greater than 1** are called significant DE genes and listed in the following table.
+
+Table is sorted in descending order of absolute value of log2FC.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis'}
+thymus_DE_table <- thymus_DE_table %>% subset(select = c(Gene.ID, logFC, AveExpr, P.Value, adj.P.Val, abs_log2FC, Gene))
+thymus_DE_table <- merge(thymus_DE_table, thymus.rma.exprs, by.x = "Gene.ID", by.y = 0)
+
+thymus_DE_table <- thymus_DE_table %>% subset(adj.P.Val < 0.05 & abs_log2FC >= 1) 
+thymus_DE_table %>% mutate_if(is.numeric, round, 6) %>% arrange(desc(abs_log2FC))%>% create_dt()
+```
+
+<!-- ## Volcano plot -->
+
+<!-- ```{r, echo=FALSE, warning=FALSE, message=FALSE, results='asis'} -->
+<!-- input.df <- thymus_DE_table -->
+
+<!-- input.df <- input.df %>% rowwise %>% mutate(sig = ifelse(adj.P.Val <= 0.05 & abs_log2FC >= 1, "Significant", "Not significant")) -->
+<!-- volcano.plot <- ggplot(data=input.df,  -->
+<!--                        aes(x=logFC, y=-log10(adj.P.Val), col=sig, label=Gene)) +  -->
+<!--   geom_point() +  -->
+<!--   scale_color_manual(values=c("#c0d2f0", "#f28095")) + -->
+<!--   theme_minimal() + -->
+<!--   geom_vline(xintercept=c(-1, 1), col="#9a9fa6", linetype='dotted') + -->
+<!--   geom_hline(yintercept=-log10(0.05), col="#9a9fa6", linetype='dotted') + -->
+<!--   xlim(-5, 5) + ylim(0, 4) +  -->
+<!--   theme_bw() +  -->
+<!--   theme(plot.title = element_text(hjust=0.5, face="bold", size = 12)) -->
+
+<!-- volcano.plotly <- ggplotly(volcano.plot,  tooltip = c("x", "y", "label")) -->
+
+<!-- volcano.plotly -->
+<!-- ``` -->
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+#####----------------------------------------------------------------------#####
+# SAVE DATA OBJECTS FOR FURTHER ANALYSIS
+#####----------------------------------------------------------------------#####
+write.csv(lung_DE_table, file.path(path.to.02.output, "Lung_DE_table.csv"))
+write.csv(thymus_DE_table, file.path(path.to.02.output, "Thymus_DE_table.csv"))
+
+```

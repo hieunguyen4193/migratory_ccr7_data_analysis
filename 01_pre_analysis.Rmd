@@ -1,0 +1,534 @@
+---
+title: "Downstream analysis, dataset: `r params$dataset.name`, config version `r params$config.version`"
+author:
+  - "trnguyen@ukaachen.de"
+date: "Last update on `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    number_sections: true
+    df_print: paged
+    toc: true
+    toc_float:
+      toc_collapsed: false
+    toc_depth: 3
+    theme: lumen
+params:
+  config.version: NA
+  orig.dataset: NA
+  output.version: NA
+---
+  
+```{css zoom-lib-src, echo = FALSE}
+script src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"
+```
+
+```{js zoom-jquery, echo = FALSE}
+$(document).ready(function() {
+  $('body').prepend('<div class=\"zoomDiv\"><img src=\"\" class=\"zoomImg\"></div>');
+  // onClick function for all plots (img's)
+    $('img:not(.zoomImg)').click(function() {
+      $('.zoomImg').attr('src', $(this).attr('src')).css({width: '100%'});
+      $('.zoomDiv').css({opacity: '1', width: 'auto', border: '1px solid white', borderRadius: '5px', position: 'fixed', top: '50%', left: '50%', marginRight: '-50%', transform: 'translate(-50%, -50%)', boxShadow: '0px 0px 50px #888888', zIndex: '50', overflow: 'auto', maxHeight: '100%'});
+    });
+    // onClick function for zoomImg
+    $('img.zoomImg').click(function() {
+      $('.zoomDiv').css({opacity: '0', width: '0%'}); 
+    });
+  });
+```
+
+<style type="text/css">
+    div.datatables { height: auto !important;}
+</style>
+
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='hide'}
+##### clean up #####
+# gc()
+# rm(list = ls())
+
+path.to.project.src <- "/media/hieunguyen/HNSD01/src/migratory_ccr7_data_analysis"
+
+source(file.path(path.to.project.src, "import_libraries.R"))
+source(file.path(path.to.project.src, "helper_functions.R"))
+source(file.path(path.to.project.src, "config.R"))
+
+#####----------------------------------------------------------------------#####
+# CONFIGURATIONS AND PREPRATIONS
+#####----------------------------------------------------------------------#####
+# outdir <- "/media/hieunguyen/HD0/outdir/CRC1382"
+
+outdir <- "/media/hieunguyen/HNSD01/outdir"
+
+orig.dataset <- params$orig.dataset
+config.version <- params$config.version
+output.version <- params$output.version
+
+PROJECT <- "FHager_datasets"
+
+input.config <- config.params[[config.version]]
+dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
+
+if (orig.dataset == "integrate_GSE192742_LIVER"){
+  path.to.main.input <- file.path(outdir,
+                                PROJECT,
+                                output.version, 
+                                dataset.name, 
+                                "s8_output",
+                                sprintf("%s.output.s8.rds", dataset.name))
+} else {
+  path.to.main.input <- file.path(outdir,
+                                PROJECT,
+                                output.version, 
+                                dataset.name, 
+                                "s8a_output",
+                                sprintf("%s.output.s8a.rds", dataset.name))
+}
+
+
+path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
+dir.create(path.to.main.output, showWarnings = FALSE)
+
+s.obj <- readRDS(path.to.main.input)
+
+path.to.01.output <- file.path(path.to.main.output, "01_output")
+dir.create(path.to.01.output, showWarnings = FALSE, recursive = TRUE)
+```
+
+# Preprocessing and QC
+## Raw data Quality control  {.tabset}
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+for (plot.name in names(s.obj@misc$all.QC)){
+ 
+    cat('###',plot.name,'{.unlisted .unnumbered} \n')
+    
+    ##### 
+    # plots or tables that we want to show in tabs
+    #####
+    print(s.obj@misc$all.QC[plot.name])
+    cat(' \n \n')
+}
+```
+
+## Ambient RNA background correction 
+
+### DecontX clusters {.tabset}
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+for (plot.name in names(s.obj@misc$ambient.cluster.RNA.plot)){
+ 
+    cat('####',plot.name,'{.unlisted .unnumbered} \n')
+    
+    ##### 
+    # plots or tables that we want to show in tabs
+    #####
+    print(s.obj@misc$ambient.cluster.RNA.plot[plot.name])
+    cat(' \n \n')
+}
+```
+
+### Contamination level in each sample
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+ggplot(s.obj@meta.data, aes(x=name, y=AmbientRNA)) + 
+  geom_boxplot()
+
+```
+
+
+### Ambient RNA contamination level {.tabset}
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+for (plot.name in names(s.obj@misc$ambient.contamination.plot)){
+ 
+    cat('####',plot.name,'{.unlisted .unnumbered} \n')
+    
+    ##### 
+    # plots or tables that we want to show in tabs
+    #####
+    print(s.obj@misc$ambient.contamination.plot[plot.name])
+    cat(' \n \n')
+}
+```
+
+
+## Descriptive statistics and filtering threshold {.tabset}
+This section is devoted to the descriptive statistics of the following varialbes: `nFeature_RNA, nCount_RNA, percent.mt, percent.ribo`. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+for (plot.item in c("nFeature_RNA", "nCount_RNA", "percent.mt", "percent.ribo")){
+  boxplot <- s.obj@meta.data %>% ggplot(aes_string(x = "name", y = plot.item)) +
+    geom_boxplot(outlier.colour="black", outlier.shape=16,
+               outlier.size=2, notch=FALSE) +
+    ggtitle(sprintf("Boxplot: Distribution of %s in each dataset", plot.item))
+  cat('###', plot.item,'{.unlisted .unnumbered} \n')
+    
+    ##### 
+    # plots or tables that we want to show in tabs
+    #####
+  
+  print(boxplot)
+  
+  cat(' \n \n')
+}
+```
+
+
+
+## Descriptive statistics + UMAP {.tabset}
+
+### % Mitochondrial
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+FeaturePlot(object = s.obj, reduction = "RNA_UMAP", feature = "percent.mt", label = TRUE, label.size = 8, pt.size = 0.5, label.color = "red", )
+```
+
+### % Ribosome
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+FeaturePlot(object = s.obj, reduction = "RNA_UMAP", feature = "percent.ribo", label = TRUE, label.size = 8, pt.size = 0.5, label.color = "red", )
+```
+
+### % nCount RNA
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+FeaturePlot(object = s.obj, reduction = "RNA_UMAP", feature = "nCount_RNA", label = TRUE, label.size = 8, pt.size = 0.5, label.color = "red", )
+```
+
+### % nGenes 
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+FeaturePlot(object = s.obj, reduction = "RNA_UMAP", feature = "nFeature_RNA", label = TRUE, label.size = 8, pt.size = 0.5, label.color = "red", )
+```
+
+## Cell cycle scoring {.tabset}
+
+### Cell cycle, split by Phase
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+DimPlot(s.obj, reduction = "RNA_UMAP", split.by = "Phase")
+```
+
+### Cell cycle, group by Phase
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+DimPlot(s.obj, reduction = "RNA_UMAP", group.by = "Phase", label = TRUE, label.size = 8, pt.size = 0.5, label.box = TRUE, repel = TRUE)
+```
+
+### PCA, cell cycle, group by Phase
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+all.genes <- rownames(x = s.obj)
+s.genes <- paste0("^", cc.genes$s.genes, "$", collapse = "|")
+s.genes <- all.genes[grepl(s.genes, all.genes, ignore.case = TRUE)]
+g2m.genes <- paste0("^", cc.genes$g2m.genes, "$", collapse = "|")
+g2m.genes <- all.genes[grepl(g2m.genes, all.genes, ignore.case = TRUE)]
+s.obj <- RunPCA(s.obj, features = c(s.genes, g2m.genes), nfeatures.print = 10, reduction.name="CELLCYCLED_PCA")
+
+DimPlot(s.obj, reduction = "CELLCYCLED_PCA", group.by = "Phase", pt.size = 1)
+```
+
+
+
+# Count number of cells having EGFP gene expression
+
+## UMAP: distribution of cells having CCR7 or EGFP
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+if (orig.dataset == "gutcellatlas_myeloid"){
+  FeaturePlot(s.obj, features = c("CCR7", "EGFP"), slot = "data", label = TRUE, label.size = 6, label.color = "red")
+} else {
+  FeaturePlot(s.obj, features = c("Ccr7", "EGFP"), slot = "data", label = TRUE, label.size = 6, label.color = "red")  
+}
+
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+EGFP.cells <- GetAssayData(s.obj, slot = "counts")["EGFP", ]
+EGFP.cells <- names(EGFP.cells[EGFP.cells != 0])
+print(sprintf("Number of cells having expression at EGFP: %s \n", length(EGFP.cells)))
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+if (orig.dataset == "gutcellatlas_myeloid"){ 
+  ccr7.cells <- GetAssayData(s.obj, slot = "counts")["CCR7", ]
+} else {
+  ccr7.cells <- GetAssayData(s.obj, slot = "counts")["Ccr7", ]
+}
+
+
+ccr7.cells <- names(ccr7.cells[ccr7.cells != 0])
+
+intersection_ccr7_EGFP <- intersect(EGFP.cells, ccr7.cells)
+print(sprintf("Number of cells having expression at Ccr7: %s \n", length(ccr7.cells)))
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+print(sprintf("Number of cells having both CCR7 and EGFP: %s \n", length(intersection_ccr7_EGFP)))
+```
+
+## UMAP highlighting cells having both CCR7 and EGFP
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+DimPlot(s.obj, reduction = "RNA_UMAP", cells.highlight = intersection_ccr7_EGFP, label = TRUE, label.box = TRUE, repel = TRUE) +
+  theme(legend.position = "none") + ggtitle("Highlighted cells having both CCR7 and EGFP expressions")
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+p.EGFP.cells <- DimPlot(s.obj, reduction = "RNA_UMAP", cells.highlight = EGFP.cells, label = TRUE, label.box = TRUE, repel = TRUE) +
+  ggtitle("Cells expressing EGFP") + theme(legend.position = "none")
+  
+p.Ccr7.cells <- DimPlot(s.obj, reduction = "RNA_UMAP", cells.highlight = ccr7.cells, label = TRUE, label.box = TRUE, repel = TRUE) +
+  ggtitle("Cells expressing Ccr7") + theme(legend.position = "none")
+
+p.EGFP.cells + p.Ccr7.cells
+```
+
+# Dimensional reduction UMAP 
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE) +
+  ggtitle("UMAP, all cells, group by clusters")
+
+cluster7.cells <- row.names(subset(s.obj@meta.data, s.obj@meta.data$seurat_clusters == 7))
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+p <- DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE, label.size = 10, pt.size = 1) +
+  theme(axis.text = element_text(size=20, face = "bold"),
+        axis.title = element_text(size=20, face = "bold"), 
+        title = element_text(size = 20, face = "bold"), 
+        legend.text = element_text(size = 20))
+
+ggsave(plot = p, filename = "UMAP_all_cells.png", dpi = 300, height = 10, width = 12, device = "png", path = ".")
+```
+
+# Re-clustering with higher cluster resolution
+Default cluster resolution is 0.5, we perform re-clustering with resolution of 1.
+
+## All cells
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+cluster.resolution <- 1
+
+num.PCA <- 25
+num.PC.used.in.UMAP <- 25
+num.PC.used.in.Clustering <- 25
+chosen.assay <- "RNA"
+my_random_seed <- 42
+
+s.obj <- FindNeighbors(s.obj, reduction = sprintf("%s_PCA", chosen.assay), dims = 1:num.PC.used.in.Clustering)
+  
+s.obj <- FindClusters(s.obj, resolution = cluster.resolution, random.seed = 0)
+
+old.cluster.info <- s.obj@meta.data %>% subset(select = c(seurat_clusters)) 
+```
+
+
+### Dimensional reduction UMAP after reclustering
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.height=10, fig.width=18, dpi = 300}
+DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE) +
+  ggtitle("UMAP, all cells, group by clusters")
+```
+
+# Cluster marker genes
+
+Applying the `wilcox` test on all genes to find the highly expressed genes in each cluster. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+if (file.exists(file.path(path.to.01.output, "cluster_markers.rds")) == FALSE){
+  cluster.markers <- FindAllMarkers(object = s.obj, assay = "RNA", test.use = "wilcox")
+  cluster.markers <- subset(cluster.markers, cluster.markers$p_val_adj <= 0.05)
+  saveRDS(cluster.markers, file.path(path.to.01.output, "cluster_markers.rds"))  
+} else {
+  cluster.markers <- readRDS(file.path(path.to.01.output, "cluster_markers.rds"))
+}
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+```
+
+## Tables of all cluster marker genes {.tabset}
+```{r echo=FALSE, include=FALSE}
+cluster.markers %>% create_dt()
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+
+for (cluster.id in sort(unique(cluster.markers$cluster))){
+  tmp.cluster.markers <- subset(cluster.markers, cluster.markers$cluster == cluster.id) %>% arrange(desc(avg_log2FC))
+  tmp.cluster.markers <- tmp.cluster.markers %>% mutate_if(is.numeric, round, 6) 
+  
+  cat(paste("\n\n### Cluster: ", cluster.id, "##\n"))
+  print( htmltools::tagList(datatable(tmp.cluster.markers, extensions = 'Buttons',
+                filter = "top",
+                options = list(dom = 'Blfrtip',
+                               buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
+                               lengthMenu = list(c(10,25,50,-1),
+                                                 c(10,25,50,"All")),
+                               columnDefs = list(list(
+                                 targets = "_all",
+                                 render = JS(
+                                   "function(data, type, row, meta) {",
+                                   "return type === 'display' && data != null && data.length > 100 ?",
+                                   "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;",
+                                   "}")
+                               ))
+                ))))
+  cat("\n \n")
+}
+
+```
+
+## Top-12 cluster marker genes `FeaturePlot` {.tabset}
+Here we just show the top-12 genes (ranked by `avg_log2FC`) for each cluster. 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+for (cluster.id in sort(unique(s.obj@meta.data$seurat_clusters))){
+  DefaultAssay(s.obj) <- "RNA"
+  cat(sprintf("### Cluster %s \n", cluster.id))
+  tmp.cluster.markers <- subset(cluster.markers, cluster.markers$cluster == cluster.id) %>% arrange(desc(avg_log2FC))
+  p <- FeaturePlot(object = s.obj, reduction = "RNA_UMAP", features = head(tmp.cluster.markers, 9)$gene, ncol = 3, label = TRUE, pt.size = 0.5, label.size = 5, label.color = "red")  
+  print(p)
+  cat("\n \n")
+}
+```
+
+## Number of cells in each cluster (all clusters)
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+count.cell.in.clusters <- s.obj@meta.data %>% subset(select = seurat_clusters) %>% table() %>% as.data.frame()
+colnames(count.cell.in.clusters) <- c("cluster", "count")
+total <- sum(count.cell.in.clusters$count)
+count.cell.in.clusters <- count.cell.in.clusters %>% rowwise() %>% mutate(pct = 100 * count/total)
+
+count.cell.in.clusters %>% arrange(desc(pct)) %>% create_dt()
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+if (file.exists(file.path(path.to.01.output, sprintf("%s.rds", dataset.name))) == FALSE){
+  saveRDS(s.obj, file.path(path.to.01.output, sprintf("%s.rds", dataset.name)))  
+}
+```
+
+# Extract CCR7 cluster only and run sub-clustering
+
+## UMAP, 2 new sub clusters in cluster CCR7
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+meta.data <- s.obj@meta.data %>% rownames_to_column("barcode")
+meta.data.ccr7 <- subset(meta.data, meta.data$barcode %in% intersect(ccr7.cells, EGFP.cells))
+
+ccr7.cluster.idx <- table(meta.data.ccr7$seurat_clusters)[table(meta.data.ccr7$seurat_clusters) == max(table(meta.data.ccr7$seurat_clusters))] %>% names()
+cluster.resolution <- 1
+s.obj.selected.CCR7 <- subset(s.obj, seurat_clusters == ccr7.cluster.idx)
+s.obj.selected.CCR7 <- RunPCA(s.obj.selected.CCR7, npcs = num.PCA, verbose = FALSE, reduction.name = "RNA_PCA")
+s.obj.selected.CCR7 <- RunUMAP(s.obj.selected.CCR7, reduction = "RNA_PCA", 
+                       dims = 1:num.PC.used.in.UMAP, reduction.name = "RNA_UMAP",
+                       seed.use = my_random_seed, umap.method = "uwot")
+s.obj.selected.CCR7 <- FindNeighbors(s.obj.selected.CCR7, reduction = "RNA_PCA", dims = 1:num.PC.used.in.Clustering)
+s.obj.selected.CCR7 <- FindClusters(s.obj.selected.CCR7, resolution = cluster.resolution, random.seed = 0)
+
+sub.cluster.ccr7.cells <- list()
+for (idx in unique(s.obj.selected.CCR7$seurat_clusters)){
+  sub.cluster.ccr7.cells[[idx]] <- subset(s.obj.selected.CCR7, seurat_clusters == idx) %>% colnames()
+}
+names(sub.cluster.ccr7.cells) <- unique(s.obj.selected.CCR7$seurat_clusters)
+library(scales)
+
+DimPlot(object = s.obj, reduction = "RNA_UMAP", 
+        cells.highlight = sub.cluster.ccr7.cells, 
+        cols.highlight = hue_pal()(length(names(sub.cluster.ccr7.cells))),
+        label = TRUE, label.box = TRUE)
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+meta.data <- s.obj@meta.data %>% rownames_to_column("barcode") %>%
+  rowwise() %>%
+  mutate(ccr7.cluster = case_when(barcode %in% sub.cluster.ccr7.cells$`0` ~ "CCR7_cluster0",
+                                  barcode %in% sub.cluster.ccr7.cells$`1` ~ "CCR7_cluster1",
+                                  barcode %in% c(sub.cluster.ccr7.cells$`0`, sub.cluster.ccr7.cells$`1`) == FALSE ~ "others")) %>%
+  column_to_rownames("barcode")
+meta.data <- meta.data[row.names(s.obj@meta.data), ]
+s.obj <- AddMetaData(object = s.obj, metadata = meta.data$ccr7.cluster, col.name = "ccr7_cluster")
+
+if (file.exists(file.path(path.to.01.output, sprintf("%s.CCR7_cluster.rds", dataset.name))) == FALSE){
+  saveRDS(s.obj, file.path(path.to.01.output, sprintf("%s.CCR7_cluster.rds", dataset.name)))  
+}
+```
+
+## Cluster marker genes
+Applying the `wilcox` test on all genes to find the highly expressed genes in each cluster.
+
+- **Positive** logFC indicates that the gene is up in the `subcluster` 0 of cluster 9.
+
+- **Negative** logFC indicates that the gene is up in the `subcluster` 1 of cluster 9.
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+cluster9.diff.markers <- FindMarkers(object = s.obj.selected.CCR7, ident.1 = 0, ident.2 = 1, group.by = "seurat_clusters")
+cluster9.diff.markers.raw <- cluster9.diff.markers
+cluster9.diff.markers <- subset(cluster9.diff.markers, cluster9.diff.markers$p_val_adj <= 0.05) %>%
+  rownames_to_column("Gene")
+
+cluster9.diff.markers %>% mutate_if(is.numeric, round, 6) %>% create_dt()
+```
+
+## Violin plot for top 10 genes up/down in subcluster 0 of cluster 9
+
+### Top 10 up genes in subcluster 0 of cluster 9
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+top10.up.genes <- subset(cluster9.diff.markers, cluster9.diff.markers$avg_log2FC >=0) %>% head()
+if (nrow(top10.up.genes) > 0){
+  VlnPlot(object = s.obj.selected.CCR7, features = top10.up.genes$Gene)  
+} else {
+  ggplot() + ggtitle("No gene found")
+}
+
+```
+
+### Top 10 down genes in subcluster 0 of cluster 9 (up in subcluster 1)
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+top10.down.genes <- subset(cluster9.diff.markers, cluster9.diff.markers$avg_log2FC < 0) %>% 
+  arrange(desc(avg_log2FC)) %>% tail(10)
+
+if (nrow(top10.down.genes) > 0){
+  VlnPlot(object = s.obj.selected.CCR7, features = top10.down.genes$Gene)
+} else {
+  ggplot() + ggtitle("No gene found")
+}
+
+```
+
+## UMAP feature plot for top 10 genes up/down in subcluster 0 of cluster 9
+
+### Top 10 up genes in subcluster 0 of cluster 9
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
+top10.up.genes <- subset(cluster9.diff.markers, cluster9.diff.markers$avg_log2FC >=0) %>% head()
+if (nrow(top10.up.genes) > 0){
+  FeaturePlot(object = s.obj, features = top10.up.genes$Gene, reduction = "RNA_UMAP", label = TRUE)    
+} else {
+  ggplot() + ggtitle("No gene found")
+}
+
+```
+
+### Top 10 down genes in subcluster 0 of cluster 9 (up in subcluster 1)
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+top10.down.genes <- subset(cluster9.diff.markers, cluster9.diff.markers$avg_log2FC < 0) %>% 
+  arrange(desc(avg_log2FC)) %>% tail(10)
+if (nrow(top10.down.genes) > 0){
+  FeaturePlot(object = s.obj, features = top10.down.genes$Gene, reduction = "RNA_UMAP", label = TRUE)  
+} else {
+  ggplot() + ggtitle("No gene found")
+}
+
+```
+
+## Check "Xcr1", "Irf8", "Sirpa", "Itgam", "Irf4"
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+subset(cluster9.diff.markers.raw, cluster9.diff.markers.raw$Gene %in% c("Xcr1", "Irf8", "Sirpa", "Itgam", "Irf4")) %>% create_dt()
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+FeaturePlot(object = s.obj, features = c("Xcr1", "Irf8", "Sirpa", "Itgam", "Irf4"), reduction = "RNA_UMAP", label = TRUE)
+```
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=20, fig.height=12}
+count.cell.new <- table(s.obj$seurat_clusters) %>% data.frame()
+colnames(count.cell.new) <- c("cluster", "count")
+count.cell.new %>% create_dt()
+```
