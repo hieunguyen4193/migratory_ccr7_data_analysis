@@ -1,0 +1,60 @@
+Package: slingshot
+Title: Tools for ordering single-cell sequencing
+Version: 1.2.0
+Description: Provides functions for inferring continuous, branching 
+    lineage structures in low-dimensional data. Slingshot was designed
+    to model developmental trajectories in single-cell RNA sequencing 
+    data and serve as a component in an analysis pipeline after 
+    dimensionality reduction and clustering. It is flexible enough to 
+    handle arbitrarily many branching events and allows for the 
+    incorporation of prior knowledge through supervised graph 
+    construction.
+Authors@R: c(person("Kelly", "Street", email = "street.kelly@gmail.com",
+            role = c("aut", "cre", "cph")),
+	     person("Davide","Risso", role = "aut",email = "risso.davide@gmail.com"),
+             person("Diya","Das", role = "aut", email = "diyadas@berkeley.edu"),
+             person("Sandrine","Dudoit", role = "ths", email = "sandrine@stat.berkeley.edu"),
+             person("Koen","Van den Berge", role = "ctb"),
+             person("Robrecht","Cannoodt", role = "ctb"))
+License: Artistic-2.0
+Depends:
+    R (>= 3.5),
+    princurve (>= 2.0.4),
+    stats
+Imports:
+    ape,
+    clusterExperiment,
+    graphics,
+    grDevices,
+    igraph,
+    matrixStats,
+    methods,
+    rgl,
+    SingleCellExperiment,
+    SummarizedExperiment
+Suggests:
+    BiocGenerics,
+    BiocStyle,
+    destiny,
+    gam,
+    knitr,
+    mclust,
+    RColorBrewer,
+    rmarkdown,
+    testthat,
+    covr
+VignetteBuilder: knitr
+LazyData: false
+RoxygenNote: 6.1.1
+biocViews:
+    Clustering,
+    DifferentialExpression,
+    GeneExpression,
+    RNASeq,
+    Sequencing,
+    Software,
+    Sequencing,
+    SingleCell,
+    Transcriptomics,
+    Visualization
+BugReports: https://github.com/kstreet13/slingshot/issues

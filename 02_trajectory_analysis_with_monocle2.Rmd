@@ -93,11 +93,20 @@ dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
 
 path.to.01.output <- file.path(path.to.main.output, "01_output")
 # path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.32.0")
-path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.32.0_v2")
+# path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.32.0_v2")
+path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.12.0_v2")
 dir.create(path.to.02.output, showWarnings = FALSE, recursive = TRUE)
 
-s.obj <- readRDS(path.to.main.input)
+path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
+```
 
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, include=TRUE, fig.height=10, fig.width=14, results='hide'}
+# s.obj <- readRDS(path.to.main.input)
+```
+
+
+```{r echo=FALSE, warning=FALSE, message=FALSE, include=TRUE, fig.height=10, fig.width=14, results='hide'}
 #####-----------------------------------------------------------------------#####
 ##### install monocle
 #####-----------------------------------------------------------------------#####
@@ -106,12 +115,14 @@ s.obj <- readRDS(path.to.main.input)
 if ("svglite" %in% installed.packages() == FALSE){
   install.packages("svglite")
 }
-library(devtools)
+
 library(monocle)
 
 if (file.exists(file.path(path.to.02.output, "monocle_obj.rds")) == FALSE){
   print("running monocle2")
-  monocle.obj <- run_monocle2(s.obj, path.to.02.output)
+  monocle.obj <- readRDS(file.path(path.to.monocle2.input, sprintf("%s.rds", dataset.name)))
+  # monocle.obj <- run_monocle2(s.obj, path.to.02.output)
+  monocle.obj <- run_monocle2_from_presave_obj(monocle.obj, path.to.02.output)
 } else {
   print("monocle object exists!")
   monocle.obj <- readRDS(file.path(path.to.02.output, "monocle_obj.rds"))  
@@ -200,215 +211,215 @@ plot_pseudotime_heatmap(monocle.obj[head(sig_gene_names, 10),],
                 show_rownames = T)
 ```
 
-# Differential gene expression test (TradeSeq)
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-# devtools::install_github("statOmics/tradeSeq")
-library(tradeSeq)
+<!-- # Differential gene expression test (TradeSeq) -->
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- # devtools::install_github("statOmics/tradeSeq") -->
+<!-- # library(tradeSeq) -->
 
-info <- extract_monocle_info(monocle.obj)
-cellWeights <- info$cellWeights
-pseudotime <- info$pseudotime
+<!-- info <- extract_monocle_info(monocle.obj) -->
+<!-- cellWeights <- info$cellWeights -->
+<!-- pseudotime <- info$pseudotime -->
 
-meta.data <- s.obj@meta.data %>% rownames_to_column("barcode")
-tmp.cellWeights <- data.frame(cellWeights) %>% rownames_to_column("barcode")
-meta.data <- merge(meta.data, tmp.cellWeights, by.x = "barcode", by.y = "barcode")
-meta.data <- meta.data %>% column_to_rownames("barcode")
-meta.data <- meta.data[row.names(s.obj@meta.data), ]
+<!-- meta.data <- s.obj@meta.data %>% rownames_to_column("barcode") -->
+<!-- tmp.cellWeights <- data.frame(cellWeights) %>% rownames_to_column("barcode") -->
+<!-- meta.data <- merge(meta.data, tmp.cellWeights, by.x = "barcode", by.y = "barcode") -->
+<!-- meta.data <- meta.data %>% column_to_rownames("barcode") -->
+<!-- meta.data <- meta.data[row.names(s.obj@meta.data), ] -->
 
-for (tmp.col in colnames(cellWeights)){
-  s.obj <- AddMetaData(object = s.obj, metadata = meta.data[[tmp.col]], col.name = tmp.col)
-}
-```
+<!-- for (tmp.col in colnames(cellWeights)){ -->
+<!--   s.obj <- AddMetaData(object = s.obj, metadata = meta.data[[tmp.col]], col.name = tmp.col) -->
+<!-- } -->
+<!-- ``` -->
 
-A matrix of cell weights defining the probability that a cell belongs to a particular lineage. Each row represents a cell and each column represents a lineage. If only a single lineage, provide a matrix with one column containing all values of 1.
+<!-- A matrix of cell weights defining the probability that a cell belongs to a particular lineage. Each row represents a cell and each column represents a lineage. If only a single lineage, provide a matrix with one column containing all values of 1. -->
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-for (tmp.col in colnames(cellWeights)){
-  p <- DimPlot(object = s.obj, reduction = umap.reduction.name, group.by = tmp.col, label = TRUE, pt.size = 1) + scale_color_manual(values = c("gray", "red"))
-  print(p)
-}
-```
-
-
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-print(sprintf("Number of lineage in this dataset: %s", ncol(cellWeights)))
-```
-
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-if (file.exists(file.path(path.to.02.output, "sce.rds")) == FALSE){
-  sce <- fitGAM(counts = Biobase::exprs(monocle.obj),
-              cellWeights = cellWeights,
-              pseudotime = pseudotime, 
-              sce = TRUE, 
-              nknots = 6,
-              parallel = TRUE, 
-              genes = intersect(row.names(Biobase::exprs(monocle.obj)), VariableFeatures(s.obj)))
-  #saveRDS(sce, file.path(path.to.02.output, "sce.rds"))  
-} else {
-  sce <- readRDS(file.path(path.to.02.output, "sce.rds"))
-}
-```
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- for (tmp.col in colnames(cellWeights)){ -->
+<!--   p <- DimPlot(object = s.obj, reduction = umap.reduction.name, group.by = tmp.col, label = TRUE, pt.size = 1) + scale_color_manual(values = c("gray", "red")) -->
+<!--   print(p) -->
+<!-- } -->
+<!-- ``` -->
 
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-#####----------------------------------------------------------------------#####
-##### Test within lineage
-#####----------------------------------------------------------------------#####
-if (file.exists(file.path(path.to.02.output, "tradeseq_test_res.rds")) == FALSE){
-  tradeseq.testres <- hash()
-  ##### Association test
-  tmp <- associationTest(sce)
-  tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE)
-  tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH")
-  tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>% arrange(desc(meanLogFC)) %>% 
-    rownames_to_column("Gene")
-  tradeseq.testres[["Association_test"]] <- tmp
-  
-  ##### Start vs End test
-  tmp <- startVsEndTest(sce)
-  tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE)
-  tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH")
-  tmp <- subset(tmp, tmp$p.adjust <= 0.05)  %>% 
-    rownames_to_column("Gene")
-  tradeseq.testres[["StartVsEnd_test"]] <- tmp
-  
-  #####----------------------------------------------------------------------#####
-  ##### Test across lineage
-  #####----------------------------------------------------------------------#####
-  if (ncol(cellWeights) >= 2){
-      ##### End vs End test
-    tmp <- diffEndTest(sce)
-    tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE)
-    tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH")
-    tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>%
-      rownames_to_column("Gene")
-    tradeseq.testres[["diff_End_test"]] <- tmp
-    
-    ##### Pattern test
-    tmp <- patternTest(sce)
-    tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE)
-    tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH")
-    tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>% 
-      rownames_to_column("Gene")
-    tradeseq.testres[["Pattern_test"]] <- tmp
-    
-    ##### early DE test
-    tmp <- earlyDETest(sce,)
-    tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE)
-    tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH")
-    tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>% 
-      rownames_to_column("Gene")
-    tradeseq.testres[["EarlyDE_test"]] <- tmp
-  }
-  
-  #saveRDS(tradeseq.testres, file.path(path.to.02.output, "tradeseq_test_res.rds"))
-} else {
-  tradeseq.testres <- readRDS(file.path(path.to.02.output, "tradeseq_test_res.rds"))
-}
-```
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- print(sprintf("Number of lineage in this dataset: %s", ncol(cellWeights))) -->
+<!-- ``` -->
 
-## All test results (table) {.tabset}
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10, include=FALSE}
-tradeseq.testres$Association_test %>% create_dt()
-```
-
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-for (input.test in names(tradeseq.testres)){
-  cat(sprintf("### Test: %s \n", input.test))
-  tmp <- tradeseq.testres[[input.test]]
-  print( htmltools::tagList(datatable(tmp, extensions = 'Buttons',
-                filter = "top",
-                options = list(dom = 'Blfrtip',
-                               buttons = c('copy', 'csv', 'excel', 'pdf', 'print'),
-                               lengthMenu = list(c(10,25,50,-1),
-                                                 c(10,25,50,"All")),
-                               columnDefs = list(list(
-                                 targets = "_all",
-                                 render = JS(
-                                   "function(data, type, row, meta) {",
-                                   "return type === 'display' && data != null && data.length > 100 ?",
-                                   "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;",
-                                   "}")
-                               ))
-                ))))
-  cat("\n \n")
-}
-```
-
-# Branch analysis (monocle-BEAM)
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-all.branch.points <- monocle.obj@auxOrderingData$DDRTree$branch_points
-names(all.branch.points) <- seq(1, length(all.branch.points))
-
-all.principal.points <- data.frame(monocle.obj@reducedDimK) %>% t() %>% as.data.frame()
-colnames(all.principal.points) <- c("V1", "V2")
-all.principal.points <- all.principal.points %>% rownames_to_column("principal_point") %>%
-  rowwise() %>% 
-  mutate(type = ifelse(principal_point %in% all.branch.points, "branch", "normal")) %>%
-  mutate(branch_point = ifelse(principal_point %in% all.branch.points, principal_point, NA))
-
-data.frame(all.branch.points) %>% rownames_to_column("index") %>% create_dt()
-```
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- if (file.exists(file.path(path.to.02.output, "sce.rds")) == FALSE){ -->
+<!--   sce <- fitGAM(counts = Biobase::exprs(monocle.obj), -->
+<!--               cellWeights = cellWeights, -->
+<!--               pseudotime = pseudotime,  -->
+<!--               sce = TRUE,  -->
+<!--               nknots = 6, -->
+<!--               parallel = TRUE,  -->
+<!--               genes = intersect(row.names(Biobase::exprs(monocle.obj)), VariableFeatures(s.obj))) -->
+<!--   #saveRDS(sce, file.path(path.to.02.output, "sce.rds"))   -->
+<!-- } else { -->
+<!--   sce <- readRDS(file.path(path.to.02.output, "sce.rds")) -->
+<!-- } -->
+<!-- ``` -->
 
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-all.principal.points %>% ggplot(aes(x = V1, y = V2, color = type, label = branch_point)) + geom_point() + scale_color_manual(values = c("red", "gray")) + geom_text_repel()
-```
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- #####----------------------------------------------------------------------##### -->
+<!-- ##### Test within lineage -->
+<!-- #####----------------------------------------------------------------------##### -->
+<!-- if (file.exists(file.path(path.to.02.output, "tradeseq_test_res.rds")) == FALSE){ -->
+<!--   tradeseq.testres <- hash() -->
+<!--   ##### Association test -->
+<!--   tmp <- associationTest(sce) -->
+<!--   tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE) -->
+<!--   tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH") -->
+<!--   tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>% arrange(desc(meanLogFC)) %>%  -->
+<!--     rownames_to_column("Gene") -->
+<!--   tradeseq.testres[["Association_test"]] <- tmp -->
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-if (length(all.branch.points) >= 1){
-  all.BEAM_res <- hash()
-  for (i in seq(1, length(all.branch.points))){
-    if (file.exists(file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i))) == FALSE){
-      BEAM_res <- BEAM(monocle.obj, branch_point = i, cores = 10)
-      BEAM_res <- BEAM_res[order(BEAM_res$qval),]
-      BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
-      #saveRDS(BEAM_res, file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i)))  
-    } else {
-      BEAM_res <- readRDS(file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i)))
-    }
-    all.BEAM_res[[sprintf("p%s", i)]] <- BEAM_res[order(BEAM_res$qval),]  
-  }  
-} else {
-  print("NO branch point to conduct BEAM analysis")
-}
+<!--   ##### Start vs End test -->
+<!--   tmp <- startVsEndTest(sce) -->
+<!--   tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE) -->
+<!--   tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH") -->
+<!--   tmp <- subset(tmp, tmp$p.adjust <= 0.05)  %>%  -->
+<!--     rownames_to_column("Gene") -->
+<!--   tradeseq.testres[["StartVsEnd_test"]] <- tmp -->
 
-```
+<!--   #####----------------------------------------------------------------------##### -->
+<!--   ##### Test across lineage -->
+<!--   #####----------------------------------------------------------------------##### -->
+<!--   if (ncol(cellWeights) >= 2){ -->
+<!--       ##### End vs End test -->
+<!--     tmp <- diffEndTest(sce) -->
+<!--     tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE) -->
+<!--     tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH") -->
+<!--     tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>% -->
+<!--       rownames_to_column("Gene") -->
+<!--     tradeseq.testres[["diff_End_test"]] <- tmp -->
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-if (length(all.branch.points) >= 1){
-  tmp.plot <- list()
-  for (i in names(all.BEAM_res)){
-    BEAM_res <- all.BEAM_res[[i]]
-    selected.BEAM.genes <-  head(BEAM_res, 100)
-    p <- plot_genes_branched_heatmap(monocle.obj[selected.BEAM.genes$gene_short_name,],
-                                     branch_point = 1,
-                                     num_clusters = 4,
-                                     cores = 1,
-                                     use_gene_short_name = T,
-                                     show_rownames = T, 
-                                     return_heatmap = TRUE)
-    tmp.plot[[i]] <- ggplotify::as.ggplot(p$ph_res)
-    dev.off()
-    # #ggsave(plot = p$ph_res, filename = "BEAM_branch_DE_genes_top100.svg", device = "svg", path = file.path(path.to.02.output), dpi = 300, width = 20, height = 15)
-  }  
-}
-```
+<!--     ##### Pattern test -->
+<!--     tmp <- patternTest(sce) -->
+<!--     tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE) -->
+<!--     tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH") -->
+<!--     tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>%  -->
+<!--       rownames_to_column("Gene") -->
+<!--     tradeseq.testres[["Pattern_test"]] <- tmp -->
 
-## BEAM results {.tabset}
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-if (length(tmp.plot) >= 1){
-  for (i in names(tmp.plot)){
-    cat(sprintf("### Branch point %s, %s \n", i, all.branch.points[[as.numeric(str_replace(i, "p", ""))]]))
-    print(tmp.plot[[i]])
-    cat("\n \n")
-  }
-} else {
-  print("NO BRANCH POINT TO CONDUCT BEAM ANALYSIS")
-}
+<!--     ##### early DE test -->
+<!--     tmp <- earlyDETest(sce,) -->
+<!--     tmp <- subset(tmp, is.na(tmp$pvalue) == FALSE) -->
+<!--     tmp$p.adjust <- p.adjust(tmp$pvalue, method = "BH") -->
+<!--     tmp <- subset(tmp, tmp$p.adjust <= 0.05) %>%  -->
+<!--       rownames_to_column("Gene") -->
+<!--     tradeseq.testres[["EarlyDE_test"]] <- tmp -->
+<!--   } -->
 
-```
+<!--   #saveRDS(tradeseq.testres, file.path(path.to.02.output, "tradeseq_test_res.rds")) -->
+<!-- } else { -->
+<!--   tradeseq.testres <- readRDS(file.path(path.to.02.output, "tradeseq_test_res.rds")) -->
+<!-- } -->
+<!-- ``` -->
 
-```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-```
+<!-- ## All test results (table) {.tabset} -->
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10, include=FALSE} -->
+<!-- tradeseq.testres$Association_test %>% create_dt() -->
+<!-- ``` -->
+
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- for (input.test in names(tradeseq.testres)){ -->
+<!--   cat(sprintf("### Test: %s \n", input.test)) -->
+<!--   tmp <- tradeseq.testres[[input.test]] -->
+<!--   print( htmltools::tagList(datatable(tmp, extensions = 'Buttons', -->
+<!--                 filter = "top", -->
+<!--                 options = list(dom = 'Blfrtip', -->
+<!--                                buttons = c('copy', 'csv', 'excel', 'pdf', 'print'), -->
+<!--                                lengthMenu = list(c(10,25,50,-1), -->
+<!--                                                  c(10,25,50,"All")), -->
+<!--                                columnDefs = list(list( -->
+<!--                                  targets = "_all", -->
+<!--                                  render = JS( -->
+<!--                                    "function(data, type, row, meta) {", -->
+<!--                                    "return type === 'display' && data != null && data.length > 100 ?", -->
+<!--                                    "'<span title=\"' + data + '\">' + data.substr(0, 100) + '...</span>' : data;", -->
+<!--                                    "}") -->
+<!--                                )) -->
+<!--                 )))) -->
+<!--   cat("\n \n") -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- # Branch analysis (monocle-BEAM) -->
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- all.branch.points <- monocle.obj@auxOrderingData$DDRTree$branch_points -->
+<!-- names(all.branch.points) <- seq(1, length(all.branch.points)) -->
+
+<!-- all.principal.points <- data.frame(monocle.obj@reducedDimK) %>% t() %>% as.data.frame() -->
+<!-- colnames(all.principal.points) <- c("V1", "V2") -->
+<!-- all.principal.points <- all.principal.points %>% rownames_to_column("principal_point") %>% -->
+<!--   rowwise() %>%  -->
+<!--   mutate(type = ifelse(principal_point %in% all.branch.points, "branch", "normal")) %>% -->
+<!--   mutate(branch_point = ifelse(principal_point %in% all.branch.points, principal_point, NA)) -->
+
+<!-- data.frame(all.branch.points) %>% rownames_to_column("index") %>% create_dt() -->
+<!-- ``` -->
+
+
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- all.principal.points %>% ggplot(aes(x = V1, y = V2, color = type, label = branch_point)) + geom_point() + scale_color_manual(values = c("red", "gray")) + geom_text_repel() -->
+<!-- ``` -->
+
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- if (length(all.branch.points) >= 1){ -->
+<!--   all.BEAM_res <- hash() -->
+<!--   for (i in seq(1, length(all.branch.points))){ -->
+<!--     if (file.exists(file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i))) == FALSE){ -->
+<!--       BEAM_res <- BEAM(monocle.obj, branch_point = i, cores = 10) -->
+<!--       BEAM_res <- BEAM_res[order(BEAM_res$qval),] -->
+<!--       BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")] -->
+<!--       #saveRDS(BEAM_res, file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i)))   -->
+<!--     } else { -->
+<!--       BEAM_res <- readRDS(file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i))) -->
+<!--     } -->
+<!--     all.BEAM_res[[sprintf("p%s", i)]] <- BEAM_res[order(BEAM_res$qval),]   -->
+<!--   }   -->
+<!-- } else { -->
+<!--   print("NO branch point to conduct BEAM analysis") -->
+<!-- } -->
+
+<!-- ``` -->
+
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- if (length(all.branch.points) >= 1){ -->
+<!--   tmp.plot <- list() -->
+<!--   for (i in names(all.BEAM_res)){ -->
+<!--     BEAM_res <- all.BEAM_res[[i]] -->
+<!--     selected.BEAM.genes <-  head(BEAM_res, 100) -->
+<!--     p <- plot_genes_branched_heatmap(monocle.obj[selected.BEAM.genes$gene_short_name,], -->
+<!--                                      branch_point = 1, -->
+<!--                                      num_clusters = 4, -->
+<!--                                      cores = 1, -->
+<!--                                      use_gene_short_name = T, -->
+<!--                                      show_rownames = T,  -->
+<!--                                      return_heatmap = TRUE) -->
+<!--     tmp.plot[[i]] <- ggplotify::as.ggplot(p$ph_res) -->
+<!--     dev.off() -->
+<!--     # #ggsave(plot = p$ph_res, filename = "BEAM_branch_DE_genes_top100.svg", device = "svg", path = file.path(path.to.02.output), dpi = 300, width = 20, height = 15) -->
+<!--   }   -->
+<!-- } -->
+<!-- ``` -->
+
+<!-- ## BEAM results {.tabset} -->
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- if (length(tmp.plot) >= 1){ -->
+<!--   for (i in names(tmp.plot)){ -->
+<!--     cat(sprintf("### Branch point %s, %s \n", i, all.branch.points[[as.numeric(str_replace(i, "p", ""))]])) -->
+<!--     print(tmp.plot[[i]]) -->
+<!--     cat("\n \n") -->
+<!--   } -->
+<!-- } else { -->
+<!--   print("NO BRANCH POINT TO CONDUCT BEAM ANALYSIS") -->
+<!-- } -->
+
+<!-- ``` -->
+
+<!-- ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10} -->
+<!-- ``` -->
 
