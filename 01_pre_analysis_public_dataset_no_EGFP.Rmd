@@ -59,10 +59,12 @@ source(file.path(path.to.project.src, "config.R"))
 #####----------------------------------------------------------------------#####
 # outdir <- "/media/hieunguyen/HD0/outdir/CRC1382"
 # outdir <- "/media/hieunguyen/HNSD01/outdir"
-# orig.dataset <- "GSM5764288"
+
+# orig.dataset <- "integrate_GSE192742_LIVER"
 # config.version <- "v0.1"
 # output.version <- "20240723"
-# PROJECT <- "FHager_datasets"
+
+PROJECT <- "FHager_datasets"
 
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 
@@ -84,6 +86,7 @@ if (orig.dataset == "integrate_GSE192742_LIVER"){
                                 sprintf("%s.output.s8.rds", dataset.name))
   reduction.name <- "INTE_UMAP"
   pca.reduction.name <- "INTE_PCA"
+  chosen.assay <- "integrated"
 } else {
   path.to.main.input <- file.path(outdir,
                                 PROJECT,
@@ -93,6 +96,7 @@ if (orig.dataset == "integrate_GSE192742_LIVER"){
                                 sprintf("%s.output.s8a.rds", dataset.name))
   reduction.name <- "RNA_UMAP"
   pca.reduction.name <- "RNA_PCA"
+  chosen.assay <- "RNA"
 }
 
 
@@ -287,11 +291,13 @@ cluster.resolution <- 1
 num.PCA <- 25
 num.PC.used.in.UMAP <- 25
 num.PC.used.in.Clustering <- 25
-chosen.assay <- "RNA"
+
 my_random_seed <- 42
 
+if (orig.dataset == "integrate_GSE192742_LIVER"){
+  DefaultAssay(s.obj) <- "integrated"
+}
 s.obj <- FindNeighbors(s.obj, reduction = pca.reduction.name, dims = 1:num.PC.used.in.Clustering)
-  
 s.obj <- FindClusters(s.obj, resolution = cluster.resolution, random.seed = 0)
 
 old.cluster.info <- s.obj@meta.data %>% subset(select = c(seurat_clusters)) 

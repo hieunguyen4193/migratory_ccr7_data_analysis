@@ -13,8 +13,9 @@ output:
     toc_depth: 3
     theme: lumen
 params:
-  org.dataset: NA
+  orig.dataset: NA
   config.version: NA
+  output.version: NA
 ---
   
 ```{css zoom-lib-src, echo = FALSE}
@@ -44,38 +45,54 @@ $(document).ready(function() {
 my_random_seed <- 42
 set.seed(my_random_seed)
 
+##### clean up #####
+# gc()
+# rm(list = ls())
+
 path.to.project.src <- "/media/hieunguyen/HNSD01/src/migratory_ccr7_data_analysis"
 
 source(file.path(path.to.project.src, "import_libraries.R"))
 source(file.path(path.to.project.src, "helper_functions.R"))
 source(file.path(path.to.project.src, "config.R"))
 
-#####----------------------------------------------------------------------#####
-# CONFIGURATIONS AND PREPRATIONS
-#####----------------------------------------------------------------------#####
-# outdir <- "/media/hieunguyen/HD0/outdir/CRC1382"
-
 outdir <- "/media/hieunguyen/HNSD01/outdir"
-orig.dataset <- "GSM5764245"
+
+# orig.dataset <- params$orig.dataset
+# config.version <- params$config.version
+# output.version <- params$output.version
+
+orig.dataset <- "220907_FH"
 config.version <- "v0.1"
 output.version <- "20240723"
+
 PROJECT <- "FHager_datasets"
 
 input.config <- config.params[[config.version]]
 dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
 
-path.to.main.input <- file.path(outdir,
+if (orig.dataset == "integrate_GSE192742_LIVER"){
+  path.to.main.input <- file.path(outdir,
+                                PROJECT,
+                                output.version, 
+                                dataset.name, 
+                                "s8_output",
+                                sprintf("%s.output.s8.rds", dataset.name))
+  umap.reduction.name <- "INTE_UMAP"
+} else {
+  path.to.main.input <- file.path(outdir,
                                 PROJECT,
                                 output.version, 
                                 dataset.name, 
                                 "s8a_output",
                                 sprintf("%s.output.s8a.rds", dataset.name))
+  umap.reduction.name <- "RNA_UMAP"
+}
 
 path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
 dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
 
 path.to.01.output <- file.path(path.to.main.output, "01_output")
-path.to.02.output <- file.path(path.to.main.output, "02_output")
+path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.32.0")
 dir.create(path.to.02.output, showWarnings = FALSE, recursive = TRUE)
 
 s.obj <- readRDS(path.to.main.input)
@@ -83,21 +100,7 @@ s.obj <- readRDS(path.to.main.input)
 #####-----------------------------------------------------------------------#####
 ##### install monocle
 #####-----------------------------------------------------------------------#####
-# if ("monocle3" %in% installed.packages()){
-  # remove.packages("monocle3")
-  # devtools::install_github("cysouw/qlcMatrix")
-  # install.packages("DDRTree")
-  # install.packages("densityClust")
-  # BiocManager::install("monocle.objSingleCell", update = FALSE)
-  # install.packages("fastICA")
-  # BiocManager::install("biocViews", update = FALSE)
-  # # remove.packages("BiocGenerics")
-  # BiocManager::install("HSMMSingleCell", update = FALSE)
-  # # install.packages("/media/hieunguyen/HD0/storage/offline_pkgs/monocle_2.30.0.tar.gz", type = "source", repos = NULL)
-  # install.packages("/media/hieunguyen/HNHD01/offline_pkgs/monocle_2.30.0/monocle", type = "source", repos = NULL)
-  # BiocManager::install("tradeSeq", update = FALSE)
-# }
-#####-----------------------------------------------------------------------#####
+# source(file.path(path.to.project.src, "install_monocle2.R"))
 
 if ("svglite" %in% installed.packages() == FALSE){
   install.packages("svglite")
@@ -124,27 +127,27 @@ dir.create(path.to.save.figures, showWarnings = FALSE, recursive = TRUE)
 
 # Plot
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE)
+DimPlot(object = s.obj, reduction = umap.reduction.name, label = TRUE, label.box = TRUE, repel = TRUE)
 ```
 
 ## UMAP
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
 p <- plot_cell_trajectory(monocle.obj, color_by = "seurat_clusters")
-ggsave(plot = p, filename = "trajectory_label_by_seurat_clusters.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
+#ggsave(plot = p, filename = "trajectory_label_by_seurat_clusters.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
 p 
 ```
 
 ## Cell trajectory from `monocle2`
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
 p <- plot_cell_trajectory(monocle.obj, show_branch_points = TRUE, show_tree = TRUE)
-ggsave(plot = p, filename = "trajectory_label_by_monocle2_states.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
+#ggsave(plot = p, filename = "trajectory_label_by_monocle2_states.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
 p
 ```
 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
 p <- plot_cell_trajectory(monocle.obj, color_by = "Pseudotime")
-ggsave(plot = p, filename = "pseudotime_on_tree_embeddings.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
+#ggsave(plot = p, filename = "pseudotime_on_tree_embeddings.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
 p
 ```
 
@@ -164,15 +167,15 @@ s.obj <- AddMetaData(object = s.obj, metadata = meta.data$State, col.name = "Sta
 
 ## UMAP: grouped by trajectory STATE
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-p <- DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE, group.by = "State")
-ggsave(plot = p, filename = "monocle2_state_on_UMAP.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
+p <- DimPlot(object = s.obj, reduction = umap.reduction.name, label = TRUE, label.box = TRUE, repel = TRUE, group.by = "State")
+#ggsave(plot = p, filename = "monocle2_state_on_UMAP.svg", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
 p
 ```
 
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
-p <- FeaturePlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, features = c("Pseudotime"))
-ggsave(plot = p, filename = "monocle2_pseudotime_on_UMAP", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
+p <- FeaturePlot(object = s.obj, reduction = umap.reduction.name, label = TRUE, features = c("Pseudotime"))
+#ggsave(plot = p, filename = "monocle2_pseudotime_on_UMAP", path = path.to.save.figures, dpi = 300, width = 14, height = 10, device = "svg")
 p
 ```
 
@@ -181,7 +184,7 @@ p
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
 if (file.exists(file.path(path.to.02.output, "pseudotime.markers.rds")) == FALSE){
   pseudotime.markers <- differentialGeneTest(monocle.obj, fullModelFormulaStr = "~sm.ns(Pseudotime)", cores = 16, verbose = TRUE)
-  saveRDS(pseudotime.markers, file.path(path.to.02.output, "pseudotime.markers.rds"))
+  #saveRDS(pseudotime.markers, file.path(path.to.02.output, "pseudotime.markers.rds"))
 } else {
   pseudotime.markers <- readRDS(file.path(path.to.02.output, "pseudotime.markers.rds"))
 }
@@ -220,7 +223,7 @@ A matrix of cell weights defining the probability that a cell belongs to a parti
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
 for (tmp.col in colnames(cellWeights)){
-  p <- DimPlot(object = s.obj, reduction = "RNA_UMAP", group.by = tmp.col, label = TRUE, pt.size = 1) + scale_color_manual(values = c("gray", "red"))
+  p <- DimPlot(object = s.obj, reduction = umap.reduction.name, group.by = tmp.col, label = TRUE, pt.size = 1) + scale_color_manual(values = c("gray", "red"))
   print(p)
 }
 ```
@@ -239,7 +242,7 @@ if (file.exists(file.path(path.to.02.output, "sce.rds")) == FALSE){
               nknots = 6,
               parallel = TRUE, 
               genes = intersect(row.names(Biobase::exprs(monocle.obj)), VariableFeatures(s.obj)))
-  saveRDS(sce, file.path(path.to.02.output, "sce.rds"))  
+  #saveRDS(sce, file.path(path.to.02.output, "sce.rds"))  
 } else {
   sce <- readRDS(file.path(path.to.02.output, "sce.rds"))
 }
@@ -297,7 +300,7 @@ if (file.exists(file.path(path.to.02.output, "tradeseq_test_res.rds")) == FALSE)
     tradeseq.testres[["EarlyDE_test"]] <- tmp
   }
   
-  saveRDS(tradeseq.testres, file.path(path.to.02.output, "tradeseq_test_res.rds"))
+  #saveRDS(tradeseq.testres, file.path(path.to.02.output, "tradeseq_test_res.rds"))
 } else {
   tradeseq.testres <- readRDS(file.path(path.to.02.output, "tradeseq_test_res.rds"))
 }
@@ -307,7 +310,6 @@ if (file.exists(file.path(path.to.02.output, "tradeseq_test_res.rds")) == FALSE)
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10, include=FALSE}
 tradeseq.testres$Association_test %>% create_dt()
 ```
-
 
 ```{r echo=FALSE, warning=FALSE, message=FALSE, results='asis', fig.width=14, fig.height=10}
 for (input.test in names(tradeseq.testres)){
@@ -360,7 +362,7 @@ if (length(all.branch.points) >= 1){
       BEAM_res <- BEAM(monocle.obj, branch_point = i, cores = 10)
       BEAM_res <- BEAM_res[order(BEAM_res$qval),]
       BEAM_res <- BEAM_res[,c("gene_short_name", "pval", "qval")]
-      saveRDS(BEAM_res, file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i)))  
+      #saveRDS(BEAM_res, file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i)))  
     } else {
       BEAM_res <- readRDS(file.path(path.to.02.output, sprintf("BEAM_res.branch_point_%s.rds", i)))
     }
@@ -387,7 +389,7 @@ if (length(all.branch.points) >= 1){
                                      return_heatmap = TRUE)
     tmp.plot[[i]] <- ggplotify::as.ggplot(p$ph_res)
     dev.off()
-    # ggsave(plot = p$ph_res, filename = "BEAM_branch_DE_genes_top100.svg", device = "svg", path = file.path(path.to.02.output), dpi = 300, width = 20, height = 15)
+    # #ggsave(plot = p$ph_res, filename = "BEAM_branch_DE_genes_top100.svg", device = "svg", path = file.path(path.to.02.output), dpi = 300, width = 20, height = 15)
   }  
 }
 ```
