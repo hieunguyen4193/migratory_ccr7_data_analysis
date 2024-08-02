@@ -20,7 +20,8 @@ PROJECT <- "FHager_datasets"
 input.config <- config.params[[config.version]]
 
 # path.to.save.html <- file.path(outdir, PROJECT, output.version, "html_outputs", "02_output")
-path.to.save.html <- file.path(outdir, PROJECT, output.version, "html_outputs", "02_output_monocle_2.32.0")
+# path.to.save.html <- file.path(outdir, PROJECT, output.version, "html_outputs", "02_output_monocle_2.32.0")
+path.to.save.html <- file.path(outdir, PROJECT, output.version, "html_outputs", "02_output_monocle_2.32.0_v2")
 dir.create(path.to.save.html, showWarnings = FALSE, recursive = TRUE)
 
 #####----------------------------------------------------------------------#####

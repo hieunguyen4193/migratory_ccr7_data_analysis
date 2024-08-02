@@ -92,7 +92,8 @@ path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, 
 dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
 
 path.to.01.output <- file.path(path.to.main.output, "01_output")
-path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.32.0")
+# path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.32.0")
+path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.32.0_v2")
 dir.create(path.to.02.output, showWarnings = FALSE, recursive = TRUE)
 
 s.obj <- readRDS(path.to.main.input)
