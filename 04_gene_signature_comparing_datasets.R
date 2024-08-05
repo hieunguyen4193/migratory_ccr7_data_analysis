@@ -54,6 +54,7 @@ for (orig.dataset in all.datasets){
                                     dataset.name, 
                                     "s8_output",
                                     sprintf("%s.output.s8.rds", dataset.name))
+    umap.reduction.name <- "INTE_UMAP"
   } else {
     path.to.main.input <- file.path(outdir,
                                     PROJECT,
@@ -61,20 +62,26 @@ for (orig.dataset in all.datasets){
                                     dataset.name, 
                                     "s8a_output",
                                     sprintf("%s.output.s8a.rds", dataset.name))
+    umap.reduction.name <- "RNA_UMAP"
   }
   
   
   path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
+  path.to.04.output <- file.path(path.to.main.output, "04_output")
+  dir.create(file.path(path.to.04.output, "04_output"), showWarnings = FALSE, recursive = TRUE)
+  
   path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
   dir.create(path.to.monocle2.input, showWarnings = FALSE, recursive = TRUE)
   
   all.s.obj[[dataset.name]] <- readRDS(path.to.main.input)
+  
+  cluster9.signature.genes <- readxl::read_excel(file.path(path.to.project.src, "Cluster 9 DEGs.xlsx")) %>% head(20) %>% pull("gene")
+  signature.genes <- list(cluster9 = cluster9.signature.genes)
+  all.s.obj[[dataset.name]] <- UCell::AddModuleScore_UCell(all.s.obj[[dataset.name]], features = signature.genes)
+  
+  FeaturePlot(object = all.s.obj[[dataset.name]], reduction = umap.reduction.name, features = "cluster9_UCell")
+  saveRDS(all.s.obj[[dataset.name]]@meta.data %>% rownames_to_column("barcode") %>% as.data.frame(), 
+          file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.csv", dataset.name)))
 }
 
-cluster9.signature.genes <- readxl::read_excel(file.path(path.to.project.src, "Cluster 9 DEGs.xlsx")) %>% head(20) %>% pull("gene")
-signature.genes <- list(cluster9 = cluster9.signature.genes)
-s.obj <- all.s.obj$integrate_GSE192742_LIVER_v0.1
 
-s.obj <- UCell::AddModuleScore_UCell(s.obj, features = signature.genes )
-
-FeaturePlot(object = s.obj, reduction = "INTE_UMAP", features = "cluster9_UCell")

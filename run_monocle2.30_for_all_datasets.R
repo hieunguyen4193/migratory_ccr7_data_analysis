@@ -73,6 +73,6 @@ for (orig.dataset in all.datasets){
   } else {
     print("monocle result exists, reading in...")
     monocle.obj <- readRDS(file.path(path.to.02.output, "monocle_obj.rds"))
-  }
+  } 
   all.monocle.obj[[dataset.name]] <- monocle.obj
 }

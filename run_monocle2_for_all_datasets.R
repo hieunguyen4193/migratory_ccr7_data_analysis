@@ -95,8 +95,26 @@ for (orig.dataset in all.datasets){
   ##### plot cell trajectory, color by pseudotime
   p <- plot_cell_trajectory(monocle.obj, color_by = "Pseudotime")
   ggsave(plot = p, filename = sprintf("cell_trajectory_%s.pseudotime.svg", dataset.name), path = path.to.02.output, device = "svg", dpi = 300, width = 14, height = 10)
+
   ##### plot cell trajectory, color by pseudotime
   monocle.obj.reverse <- orderCells(monocle.obj, reverse = TRUE)
   p <- plot_cell_trajectory(monocle.obj.reverse, color_by = "Pseudotime")
   ggsave(plot = p, filename = sprintf("cell_trajectory_%s.rev_Pseudotime.svg", dataset.name), path = path.to.02.output, device = "svg", dpi = 300, width = 14, height = 10)
+  
+  ##### save monocle data to csv file
+  
+  monocledf <- data.frame(
+    barcode = colnames(monocle.obj),
+    state = monocle.obj$State,
+    pseudotime = monocle.obj$Pseudotime
+  )
+  monocle.reversedf <- data.frame(
+    barcode = colnames(monocle.obj.reverse),
+    state = monocle.obj.reverse$State,
+    pseudotime = monocle.obj.reverse$Pseudotime
+  )
+  write.csv(monocledf, file.path(path.to.02.output, "monocledf.csv"))
+  write.csv(monocle.reversedf, file.path(path.to.02.output, "monocledf.csv"))
 }
+
+
