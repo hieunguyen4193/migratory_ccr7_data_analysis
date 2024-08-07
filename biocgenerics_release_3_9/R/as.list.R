@@ -1,4 +1,0 @@
-
-
-setGeneric("as.list")
-

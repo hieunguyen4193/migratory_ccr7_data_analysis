@@ -6,7 +6,7 @@ path.to.main.src <- "/media/hieunguyen/HNSD01/src/migratory_ccr7_data_analysis"
 source(file.path(path.to.main.src, "config.R"))
 
 config.version <- "v0.1"
-output.version <- "20240723"
+output.version <- "20240806"
 path.to.pipeline.src <- "/media/hieunguyen/HNSD01/src/src_pipeline/scRNA_GEX_pipeline"
 path2src <- file.path(path.to.pipeline.src, "processes_src")
 

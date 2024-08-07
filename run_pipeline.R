@@ -9,8 +9,9 @@ all.PROJECTS <- list( `220907_Kopplin_Pabst` = "220907_FH",
                       `230228_Kopplin_Pabst` = "230228_FH")
 
 path.to.storage <- "/media/hieunguyen/HNSD01/storage"
-output.version <- "20240723"
+output.version <- "20240806"
 outdir <- "/media/hieunguyen/HNSD01/outdir"
+
 for (config.version in c("v0.1")){
   for (dataset.name in names(all.PROJECTS)){
     PROJECT <- sprintf("%s_%s", all.PROJECTS[[dataset.name]], config.version)
@@ -105,7 +106,6 @@ for (config.version in c("v0.1")){
                                 my_random_seed = my_random_seed,
                                 sw = sw,
                                 with.VDJ = FALSE)
-      
     }
     writeLines(capture.output(sessionInfo()), file.path(path.to.output, sprintf("%s_sessionInfo.txt", PROJECT)))
   }

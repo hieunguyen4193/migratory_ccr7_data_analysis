@@ -1,10 +1,17 @@
 gc()
 rm(list=ls())
 
-path.to.save.html.output <- "/home/hieunguyen/CRC1382/src_2023/FHager_datasets/bulkRNAseq/01_html_reports_20231113"
+outdir <- "/media/hieunguyen/HNSD01/outdir"
+PROJECT <- "FHager_datasets"
+data.version <- "20240806"
+
+path.to.main.output <- file.path(outdir, PROJECT, data.version, "bulkRNAseq_data")
+dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)
+
+path.to.save.html.output <- file.path(path.to.main.output, "html_output")
 dir.create(path.to.save.html.output, showWarnings = FALSE, recursive = TRUE)
 
-rmd.dir <- "/home/hieunguyen/CRC1382/src_2023/FHager_datasets/bulkRNAseq"
+rmd.dir <- "/media/hieunguyen/HNSD01/src/migratory_ccr7_data_analysis/bulkRNAseq_data"
 
 render_rmd_report <- function( 
     cell.type, 
@@ -12,7 +19,7 @@ render_rmd_report <- function(
     sample.type2, 
     cutoff.logFC, 
     cutoff.adjp, 
-    template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+    template.name = "01_analysis_report.Rmd",
     html.dir = path.to.save.html.output){
   dir.create(html.dir, showWarnings = F)
   rmarkdown::render(file.path(rmd.dir, template.name), 
@@ -32,40 +39,40 @@ render_rmd_report <- function(
 ##### Cut-off 0.01 on adjusted p value
 #####-------------------------------------------------------------------------#####
 render_rmd_report("CD11b", "LP", "mL", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 
 render_rmd_report("CD11b", "LP", "mLN", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD11b", "mL", "mLN", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD103", "LP", "mL", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD103", "LP", "mLN", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD103", "mL", "mLN", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("DP", "LP", "mL", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("DP", "LP", "mLN", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("DP", "mL", "mLN", 1, 0.01, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 
@@ -73,40 +80,40 @@ render_rmd_report("DP", "mL", "mLN", 1, 0.01,
 ##### Cut-off 0.05 on adjusted p value
 #####-------------------------------------------------------------------------#####
 render_rmd_report("CD11b", "LP", "mL", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 
 render_rmd_report("CD11b", "LP", "mLN", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD11b", "mL", "mLN", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD103", "LP", "mL", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD103", "LP", "mLN", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("CD103", "mL", "mLN", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("DP", "LP", "mL", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("DP", "LP", "mLN", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 render_rmd_report("DP", "mL", "mLN", 1, 0.05, 
-                  template.name = "01_main_analysis_report_GSE160156_DESeq2.Rmd",
+                  template.name = "01_analysis_report.Rmd",
                   html.dir = path.to.save.html.output
 )
 

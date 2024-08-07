@@ -42,7 +42,7 @@ bioc.packages <- c("celda",
                    "arrayQualityMetrics",
                    "limma",
                    "topGO",
-                   "ReactomePA",
+                   # "ReactomePA",ss
                    "clusterProfiler")
 # Check if packages are installed ##############################################
 

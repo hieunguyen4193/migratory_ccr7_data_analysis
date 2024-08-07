@@ -25,7 +25,7 @@ path.to.project.src <- "/media/hieunguyen/HNSD01/src/migratory_ccr7_data_analysi
 source(file.path(path.to.project.src, "import_libraries.R"))
 
 dataset_gse <- "GSE71170"
-output.version <- "20240723"
+output.version <- "20240806"
 
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 PROJECT <- "FHager_datasets"
