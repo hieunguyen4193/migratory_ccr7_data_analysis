@@ -22,7 +22,9 @@ all.datasets <- c("220907_FH",
                   "230228_FH",
                   "GSM5764288",            
                   "GSM5764245",
-                  "gutcellatlas_myeloid")
+                  "gutcellatlas_myeloid",
+                  "220907_FH_cDC1",
+                  "220907_FH_cDC2")
 
 config.version <- "v0.1"
 output.version <- "20240806"

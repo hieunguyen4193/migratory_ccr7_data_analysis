@@ -22,7 +22,9 @@ all.datasets <- c("220907_FH",
                   "GSM5764288",            
                   "GSM5764245",
                   "integrate_GSE192742_LIVER",
-                  "gutcellatlas_myeloid"
+                  "gutcellatlas_myeloid",
+                  "220907_FH_cDC1",
+                  "220907_FH_cDC2"
 )
 
 # to solve unable to access index for repository https://mran.microsoft.com/snapshot/2020-07-16/src/contrib
@@ -115,7 +117,7 @@ for (orig.dataset in all.datasets){
     pseudotime = monocle.obj.reverse$Pseudotime
   )
   write.csv(monocledf, file.path(path.to.02.output, "monocledf.csv"))
-  write.csv(monocle.reversedf, file.path(path.to.02.output, "monocledf.csv"))
+  write.csv(monocle.reversedf, file.path(path.to.02.output, "monocledf.rev.csv"))
 }
 
 

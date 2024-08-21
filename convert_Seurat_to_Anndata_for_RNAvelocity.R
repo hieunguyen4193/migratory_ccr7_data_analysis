@@ -14,7 +14,9 @@ all.datasets <- c("220907_FH",
                   "230228_FH",
                   "GSM5764288",            
                   "GSM5764245",
-                  "gutcellatlas_myeloid"
+                  "gutcellatlas_myeloid",
+                  "220907_FH_cDC1",
+                  "220907_FH_cDC2"
 )
 
 outdir <- "/media/hieunguyen/HNSD01/outdir"
@@ -38,6 +40,8 @@ for (orig.dataset in all.datasets){
                                       dataset.name, 
                                       "s8_output",
                                       sprintf("%s.output.s8.rds", dataset.name))
+    } else if (orig.dataset == "220907_FH") {
+      path.to.main.input <- "/media/hieunguyen/HNSD01/outdir/FHager_datasets/20240806/220907_FH_v0.1/data_analysis/01_output/220907_FH_v0.1.rds"
     } else {
       path.to.main.input <- file.path(outdir,
                                       PROJECT,
@@ -68,7 +72,7 @@ for (orig.dataset in all.datasets){
     
     # write expression counts matrix
     library(Matrix)
-    counts_matrix <- GetAssayData(s.obj, assay='RNA', slot='counts')
+    counts_matrix <- GetAssayData(s.obj, assay='RNA', slot='data')
     writeMM(counts_matrix, file=file.path(path.to.seurat2anndata, sprintf('counts_%s.mtx', dataset.name)))
     
     # write gene names

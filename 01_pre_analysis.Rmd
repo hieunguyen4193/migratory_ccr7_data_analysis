@@ -65,6 +65,10 @@ orig.dataset <- params$orig.dataset
 config.version <- params$config.version
 output.version <- params$output.version
 
+# orig.dataset <- "220907_FH"
+# config.version <- "v0.1"
+# output.version <- "20240806"
+
 PROJECT <- "FHager_datasets"
 
 input.config <- config.params[[config.version]]

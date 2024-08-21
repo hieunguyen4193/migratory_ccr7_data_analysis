@@ -14,7 +14,9 @@ all.datasets <- c("220907_FH",
                   "230228_FH",
                   "GSM5764288",            
                   "GSM5764245",
-                  "gutcellatlas_myeloid"
+                  "gutcellatlas_myeloid",
+                  "220907_FH_cDC1",
+                  "220907_FH_cDC2"
 )
 
 outdir <- "/media/hieunguyen/HNSD01/outdir"

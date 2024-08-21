@@ -32,7 +32,9 @@ all_datasets = ["220907_FH",
                 "GSM5764288",            
                 "GSM5764245",
                 "integrate_GSE192742_LIVER",
-                "gutcellatlas_myeloid"]
+                "gutcellatlas_myeloid",
+               "220907_FH_cDC1",
+               "220907_FH_cDC2"]
 
 for orig_dataset in tqdm(all_datasets):
     config_version = "v0.1"
