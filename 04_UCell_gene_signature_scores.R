@@ -47,52 +47,53 @@ for (orig.dataset in all.datasets){
   print(sprintf("reading dataset %s in ",orig.dataset))
   input.config <- config.params[[config.version]]
   dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
-  
-  if (orig.dataset == "integrate_GSE192742_LIVER"){
-    path.to.main.input <- file.path(outdir,
-                                    PROJECT,
-                                    output.version, 
-                                    dataset.name, 
-                                    "s8_output",
-                                    sprintf("%s.output.s8.rds", dataset.name))
-    umap.reduction.name <- "INTE_UMAP"
+    if (orig.dataset == "integrate_GSE192742_LIVER"){
+      path.to.main.input <- file.path(outdir,
+                                      PROJECT,
+                                      output.version, 
+                                      dataset.name, 
+                                      "s8_output",
+                                      sprintf("%s.output.s8.rds", dataset.name))
+      umap.reduction.name <- "INTE_UMAP"
+    } else {
+      path.to.main.input <- file.path(outdir,
+                                      PROJECT,
+                                      output.version, 
+                                      dataset.name, 
+                                      "s8a_output",
+                                      sprintf("%s.output.s8a.rds", dataset.name))
+      umap.reduction.name <- "RNA_UMAP"
+    }
+    path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
+    path.to.04.output <- file.path(path.to.main.output, "04_output")
+    dir.create(file.path(path.to.04.output, "04_output"), showWarnings = FALSE, recursive = TRUE)
+  if (file.exists(file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.csv", dataset.name))) == FALSE){
+      
+    path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
+    dir.create(path.to.monocle2.input, showWarnings = FALSE, recursive = TRUE)
+    
+    all.s.obj[[dataset.name]] <- readRDS(path.to.main.input)
+    
+    cluster9.signature.genes <- readxl::read_excel(file.path(path.to.project.src, "Cluster 9 DEGs.xlsx")) %>% head(20) %>% pull("gene")
+    if (orig.dataset == "gutcellatlas_myeloid"){
+      signature.genes <- list(cluster9 = toupper(cluster9.signature.genes))
+    } else {
+      signature.genes <- list(cluster9 = cluster9.signature.genes)    
+    }
+    all.s.obj[[dataset.name]] <- UCell::AddModuleScore_UCell(all.s.obj[[dataset.name]], features = signature.genes)
+    
+    # FeaturePlot(object = all.s.obj[[dataset.name]], reduction = umap.reduction.name, features = "cluster9_UCell")
+    feature.plot <- FeaturePlot(object = all.s.obj[[dataset.name]], features = "cluster9_UCell", label = TRUE, reduction = umap.reduction.name)
+    violin.plot <- VlnPlot(object = all.s.obj[[dataset.name]], features = "cluster9_UCell")
+    ggsave(plot = feature.plot, filename = sprintf("signatureScore_UMAP_%s.svg", dataset.name), 
+           path = file.path(path.to.04.output), device = "svg", width = 14, height = 10, dpi = 300)
+    ggsave(plot = violin.plot, filename = sprintf("signatureScore_violinplot_%s.svg", dataset.name), 
+           path = file.path(path.to.04.output), device = "svg", width = 14, height = 10, dpi = 300)
+    saveRDS(all.s.obj[[dataset.name]]@meta.data %>% rownames_to_column("barcode") %>% as.data.frame(), 
+            file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.csv", dataset.name)))
   } else {
-    path.to.main.input <- file.path(outdir,
-                                    PROJECT,
-                                    output.version, 
-                                    dataset.name, 
-                                    "s8a_output",
-                                    sprintf("%s.output.s8a.rds", dataset.name))
-    umap.reduction.name <- "RNA_UMAP"
+    print(sprintf("Gene signature score for dataset %s finished", dataset.name))
   }
-  
-  
-  path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
-  path.to.04.output <- file.path(path.to.main.output, "04_output")
-  dir.create(file.path(path.to.04.output, "04_output"), showWarnings = FALSE, recursive = TRUE)
-  
-  path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
-  dir.create(path.to.monocle2.input, showWarnings = FALSE, recursive = TRUE)
-  
-  all.s.obj[[dataset.name]] <- readRDS(path.to.main.input)
-  
-  cluster9.signature.genes <- readxl::read_excel(file.path(path.to.project.src, "Cluster 9 DEGs.xlsx")) %>% head(20) %>% pull("gene")
-  if (orig.dataset == "gutcellatlas_myeloid"){
-    signature.genes <- list(cluster9 = toupper(cluster9.signature.genes))
-  } else {
-    signature.genes <- list(cluster9 = cluster9.signature.genes)    
-  }
-  all.s.obj[[dataset.name]] <- UCell::AddModuleScore_UCell(all.s.obj[[dataset.name]], features = signature.genes)
-  
-  # FeaturePlot(object = all.s.obj[[dataset.name]], reduction = umap.reduction.name, features = "cluster9_UCell")
-  feature.plot <- FeaturePlot(object = all.s.obj[[dataset.name]], features = "cluster9_UCell", label = TRUE, reduction = umap.reduction.name)
-  violin.plot <- VlnPlot(object = all.s.obj[[dataset.name]], features = "cluster9_UCell")
-  ggsave(plot = feature.plot, filename = sprintf("signatureScore_UMAP_%s.svg", dataset.name), 
-         path = file.path(path.to.04.output), device = "svg", width = 14, height = 10, dpi = 300)
-  ggsave(plot = violin.plot, filename = sprintf("signatureScore_violinplot_%s.svg", dataset.name), 
-         path = file.path(path.to.04.output), device = "svg", width = 14, height = 10, dpi = 300)
-  saveRDS(all.s.obj[[dataset.name]]@meta.data %>% rownames_to_column("barcode") %>% as.data.frame(), 
-          file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.csv", dataset.name)))
 }
 
 

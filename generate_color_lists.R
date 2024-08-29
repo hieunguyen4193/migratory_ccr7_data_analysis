@@ -31,7 +31,8 @@ for (orig.dataset in all.datasets){
   print(sprintf("working on dataset %s", orig.dataset))
   dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
   path.to.save.colors <- file.path(outdir, PROJECT, output.version, "colors", dataset.name)
-  dir.create(path.to.save.colors, showWarnings = FALSE, recursive = TRUE)
+  if (file.exists(file.path(path.to.save.colors, "colordf.csv")) == FALSE){
+    dir.create(path.to.save.colors, showWarnings = FALSE, recursive = TRUE)
     if (orig.dataset == "integrate_GSE192742_LIVER"){
       path.to.main.input <- file.path(outdir,
                                       PROJECT,
@@ -52,4 +53,7 @@ for (orig.dataset in all.datasets){
     library(scales)
     colors <- hue_pal()(num.clusters)
     write.csv(data.frame(color = colors), file.path(path.to.save.colors, "colordf.csv"))
+  } else {
+    print(sprintf("File %s existed", file.path(path.to.save.colors, "colordf.csv")))
+  }
 }

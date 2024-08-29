@@ -9,7 +9,7 @@ if ("hdf5r" %in% installed.packages() == FALSE){
   install.packages("hdf5r")
 }
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
 path.to.pipeline.src <- "/media/hieunguyen/HNSD01/src/src_pipeline/scRNA_GEX_pipeline"
 path2src <- file.path(path.to.pipeline.src, "processes_src")
 
@@ -130,7 +130,7 @@ source(file.path(path.to.pipeline.src, "/scRNA_GEX_pipeline/processes_src/s8_int
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 
 PROJECT <- "FHager_datasets"
-output.version <- "20240806"
+output.version <- "20240828"
 config.version <- "v0.1"
 
 path.to.integrate.output <- file.path(outdir, PROJECT, output.version, sprintf("integrate_GSE192742_LIVER_%s", config.version))

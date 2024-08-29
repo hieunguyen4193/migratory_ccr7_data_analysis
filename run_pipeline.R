@@ -9,7 +9,7 @@ all.PROJECTS <- list( `220907_Kopplin_Pabst` = "220907_FH",
                       `230228_Kopplin_Pabst` = "230228_FH")
 
 path.to.storage <- "/media/hieunguyen/HNSD01/storage"
-output.version <- "20240806"
+output.version <- "20240828"
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 
 for (config.version in c("v0.1")){

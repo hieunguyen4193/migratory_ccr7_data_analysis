@@ -23,15 +23,20 @@ dataset.name <- sprintf("%s_%s", org.dataset, config.version)
 
 if (file.exists(file.path(outdir,
                           PROJECT,
-                          output.version, "finished_splitting_cDC1_cDC2.csv")) == FALSE){
+                          output.version, "finished_splitting_cDC1_cDC2_20240828.csv")) == FALSE){
   ##### read the saved object in 01_output
   s.obj <- readRDS(file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis", "01_output", sprintf("%s.rds", dataset.name)))
   
   cdc1.clusters <- selected.clusters[[org.dataset]][[config.version]]$cDC1
   cdc2.clusters <- selected.clusters[[org.dataset]][[config.version]]$cDC2
   
+  s.obj.modified <- s.obj
+  umap.embd <- s.obj.modified@reductions$RNA_UMAP@cell.embeddings %>% as.data.frame()
+  tmp.remove.cells <- row.names(subset(umap.embd, (umap.embd$UMAP_1 < -4) & (umap.embd$UMAP_2 <= -8)))
+  
   s.obj.cdc1 <- subset(s.obj, seurat_clusters %in% cdc1.clusters)
-  s.obj.cdc2 <- subset(s.obj, seurat_clusters %in% cdc2.clusters)
+  s.obj.cdc2 <- subset(s.obj.modified, seurat_clusters %in% cdc2.clusters)
+  s.obj.cdc2 <- subset(s.obj.cdc2, cells = setdiff(colnames(s.obj.cdc2), tmp.remove.cells))
   
   re_process_subset_dataset <- function(input.s.obj){
     num.PCA <- 25
@@ -56,7 +61,7 @@ if (file.exists(file.path(outdir,
     
     # clustering 
     input.s.obj <- FindNeighbors(input.s.obj, reduction = sprintf("%s_PCA", chosen.assay), dims = 1:num.PC.used.in.Clustering)
-    input.s.obj <- FindClusters(input.s.obj, resolution = 0.5, random.seed = 0)
+    input.s.obj <- FindClusters(input.s.obj, resolution = cluster.resolution, random.seed = 0)
     return(input.s.obj)
   }
   s.obj.cdc1 <- re_process_subset_dataset(s.obj.cdc1)
@@ -89,9 +94,9 @@ if (file.exists(file.path(outdir,
   
   write.csv(data.frame(status = c("finished")), file.path(outdir,
                                                           PROJECT,
-                                                          output.version, "finished_splitting_cDC1_cDC2.csv"))
+                                                          output.version, "finished_splitting_cDC1_cDC2_20240828.csv"))
 } else {
   print(file.path(outdir,
                   PROJECT,
-                  output.version, "finished_splitting_cDC1_cDC2.csv"))
+                  output.version, "finished_splitting_cDC1_cDC2_20240828.csv"))
 }
