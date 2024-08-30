@@ -22,7 +22,7 @@ all.datasets <- c("220907_FH",
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
 PROJECT <- "FHager_datasets"
 
 input.config <- config.params[[config.version]]
@@ -33,29 +33,8 @@ for (orig.dataset in all.datasets){
   path.to.seurat2anndata <- file.path(outdir, PROJECT, output.version, "seurat2anndata", dataset.name)
   dir.create(path.to.seurat2anndata, showWarnings = FALSE, recursive = TRUE)
   if (file.exists(file.path(path.to.seurat2anndata, sprintf('finished_%s.csv', dataset.name))) == FALSE){
-    if (orig.dataset == "integrate_GSE192742_LIVER"){
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8_output",
-                                      sprintf("%s.output.s8.rds", dataset.name))
-    } else if (orig.dataset == "220907_FH") {
-      path.to.main.input <- "/media/hieunguyen/HNSD01/outdir/FHager_datasets/20240806/220907_FH_v0.1/data_analysis/01_output/220907_FH_v0.1.rds"
-    } else {
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8a_output",
-                                      sprintf("%s.output.s8a.rds", dataset.name))
-    }
-    
-    
-    
-    
+    path.to.main.input <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis", "01_output", sprintf("%s.rds", dataset.name))
     s.obj <- readRDS(path.to.main.input)
-    
     s.obj$barcode <- colnames(s.obj)
     
     if (dataset.name == sprintf("integrate_GSE192742_LIVER_%s", config.version)){

@@ -40,7 +40,7 @@ all.datasets <- c("220907_FH",
 
 all.s.obj <- list()
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
 PROJECT <- "FHager_datasets"
 
 for (orig.dataset in all.datasets){
@@ -48,23 +48,12 @@ for (orig.dataset in all.datasets){
   input.config <- config.params[[config.version]]
   dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
     if (orig.dataset == "integrate_GSE192742_LIVER"){
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8_output",
-                                      sprintf("%s.output.s8.rds", dataset.name))
       umap.reduction.name <- "INTE_UMAP"
     } else {
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8a_output",
-                                      sprintf("%s.output.s8a.rds", dataset.name))
       umap.reduction.name <- "RNA_UMAP"
     }
     path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
+    path.to.s.obj <- file.path(path.to.main.output, "01_output", sprintf("%s.rds", dataset.name))
     path.to.04.output <- file.path(path.to.main.output, "04_output")
     dir.create(file.path(path.to.04.output, "04_output"), showWarnings = FALSE, recursive = TRUE)
   if (file.exists(file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.csv", dataset.name))) == FALSE){
@@ -72,7 +61,7 @@ for (orig.dataset in all.datasets){
     path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
     dir.create(path.to.monocle2.input, showWarnings = FALSE, recursive = TRUE)
     
-    all.s.obj[[dataset.name]] <- readRDS(path.to.main.input)
+    all.s.obj[[dataset.name]] <- readRDS(path.to.s.obj)
     
     cluster9.signature.genes <- readxl::read_excel(file.path(path.to.project.src, "Cluster 9 DEGs.xlsx")) %>% head(20) %>% pull("gene")
     if (orig.dataset == "gutcellatlas_myeloid"){

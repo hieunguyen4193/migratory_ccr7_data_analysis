@@ -27,32 +27,17 @@ all.datasets <- c("220907_FH",
                   "220907_FH_cDC2")
 
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
 PROJECT <- "FHager_datasets"
 
 for (orig.dataset in all.datasets){
   input.config <- config.params[[config.version]]
   dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
-    if (orig.dataset == "integrate_GSE192742_LIVER"){
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8_output",
-                                      sprintf("%s.output.s8.rds", dataset.name))
-    } else {
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8a_output",
-                                      sprintf("%s.output.s8a.rds", dataset.name))
-    }
-    
-    
-    path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
-    path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
-    dir.create(path.to.monocle2.input, showWarnings = FALSE, recursive = TRUE)
+  path.to.main.input <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis", "01_output", sprintf("%s.rds", dataset.name))
+  path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
+  path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
+  dir.create(path.to.monocle2.input, showWarnings = FALSE, recursive = TRUE)
+  
   if (file.exists(file.path(path.to.monocle2.input, sprintf("%s.rds", dataset.name))) == FALSE){
     print(sprintf("working on %s", dataset.name))
     s.obj <- readRDS(path.to.main.input)

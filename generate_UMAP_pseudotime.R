@@ -22,7 +22,7 @@ all.datasets <- c("220907_FH",
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
 PROJECT <- "FHager_datasets"
 
 input.config <- config.params[[config.version]]
@@ -31,27 +31,11 @@ if ("svglite" %in% installed.packages() == FALSE){
   install.packages("svglite")
 }
 for (orig.dataset in all.datasets){
-# for (orig.dataset in c("220907_FH")){
   print(sprintf("working on dataset %s", orig.dataset))
   dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
   path.to.save.colors <- file.path(outdir, PROJECT, output.version, "colors", dataset.name)
   dir.create(path.to.save.colors, showWarnings = FALSE, recursive = TRUE)
-  if (orig.dataset == "integrate_GSE192742_LIVER"){
-    path.to.main.input <- file.path(outdir,
-                                    PROJECT,
-                                    output.version, 
-                                    dataset.name, 
-                                    "s8_output",
-                                    sprintf("%s.output.s8.rds", dataset.name))
-  } else {
-    path.to.main.input <- file.path(outdir,
-                                    PROJECT,
-                                    output.version, 
-                                    dataset.name, 
-                                    "s8a_output",
-                                    sprintf("%s.output.s8a.rds", dataset.name))
-  }
-  
+  path.to.main.input <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis", "01_output", sprintf("%s.rds", dataset.name))
   path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis")
   path.to.02.output <- file.path(path.to.main.output, "02_output_monocle_2.12.0_v1")
   

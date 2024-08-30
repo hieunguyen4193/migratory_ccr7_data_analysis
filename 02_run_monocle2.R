@@ -37,7 +37,7 @@ if ("svglite" %in% installed.packages() == FALSE){
 }
 
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
 PROJECT <- "FHager_datasets"
 
 all.monocle.obj <- list()
@@ -46,20 +46,8 @@ for (orig.dataset in all.datasets){
   dataset.name <- sprintf("%s_%s", orig.dataset, config.version)
   
   if (orig.dataset == "integrate_GSE192742_LIVER"){
-    path.to.main.input <- file.path(outdir,
-                                    PROJECT,
-                                    output.version, 
-                                    dataset.name, 
-                                    "s8_output",
-                                    sprintf("%s.output.s8.rds", dataset.name))
     umap.reduction.name <- "INTE_UMAP"
   } else {
-    path.to.main.input <- file.path(outdir,
-                                    PROJECT,
-                                    output.version, 
-                                    dataset.name, 
-                                    "s8a_output",
-                                    sprintf("%s.output.s8a.rds", dataset.name))
     umap.reduction.name <- "RNA_UMAP"
   }
   

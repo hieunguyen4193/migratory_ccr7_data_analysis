@@ -22,7 +22,7 @@ all.datasets <- c("220907_FH",
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
 PROJECT <- "FHager_datasets"
 
 input.config <- config.params[[config.version]]
@@ -33,21 +33,7 @@ for (orig.dataset in all.datasets){
   path.to.save.colors <- file.path(outdir, PROJECT, output.version, "colors", dataset.name)
   if (file.exists(file.path(path.to.save.colors, "colordf.csv")) == FALSE){
     dir.create(path.to.save.colors, showWarnings = FALSE, recursive = TRUE)
-    if (orig.dataset == "integrate_GSE192742_LIVER"){
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8_output",
-                                      sprintf("%s.output.s8.rds", dataset.name))
-    } else {
-      path.to.main.input <- file.path(outdir,
-                                      PROJECT,
-                                      output.version, 
-                                      dataset.name, 
-                                      "s8a_output",
-                                      sprintf("%s.output.s8a.rds", dataset.name))
-    }
+    path.to.main.input <- file.path(outdir, PROJECT, output.version, dataset.name, "data_analysis", "01_output", sprintf("%s.rds", dataset.name))
     s.obj <- readRDS(path.to.main.input)
     num.clusters <- length(unique(s.obj$seurat_clusters))
     library(scales)

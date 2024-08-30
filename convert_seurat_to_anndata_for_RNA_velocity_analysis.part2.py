@@ -38,7 +38,7 @@ all_datasets = ["220907_FH",
 
 for orig_dataset in tqdm(all_datasets):
     config_version = "v0.1"
-    output_version = "20240806"
+    output_version = "20240828"
     PROJECT = "FHager_datasets"
     
     dataset_name = "{}_{}".format(orig_dataset, config_version)

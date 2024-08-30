@@ -16,7 +16,7 @@ outdir <- "/media/hieunguyen/HNSD01/outdir"
 PROJECT <- "FHager_datasets"
 org.dataset <- "220907_FH"
 config.version <- "v0.1"
-output.version <- "20240806"
+output.version <- "20240828"
   
 input.config <- config.params[[config.version]]
 dataset.name <- sprintf("%s_%s", org.dataset, config.version)

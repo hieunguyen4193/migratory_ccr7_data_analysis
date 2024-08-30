@@ -3,7 +3,7 @@ rm(list=ls())
 
 outdir <- "/media/hieunguyen/HNSD01/outdir"
 PROJECT <- "FHager_datasets"
-data.version <- "20240806"
+data.version <- "20240828"
 
 path.to.main.output <- file.path(outdir, PROJECT, data.version, "bulkRNAseq_data")
 dir.create(path.to.main.output, showWarnings = FALSE, recursive = TRUE)

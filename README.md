@@ -16,7 +16,11 @@
 
 - Run `run_pipeline_GSE192742_LIVER.R`: Run the downstream analysis pipeline for the dataset `GSE192742` including the three samples `GSM5764259`, `GSM5764245`, `GSM5764288`.
 
+- Run `run_to_generate_html_01.R`
 
+- Run `prepare_Seurat_data_for_running_monocle2.R`
+
+- Run `generate_color_lists.R`
 
 
 

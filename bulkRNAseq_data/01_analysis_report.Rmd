@@ -53,7 +53,7 @@ metadata <- vroom(file.path(path.to.project.src, "input_data", "sample_sheet_GSE
 
 # outdir <- "/media/hieunguyen/HD0/outdir/CRC1382/FHager_datasets"
 outdir <- "/media/hieunguyen/HNSD01/outdir"
-output.version <- "20240723"
+output.version <- "20240828"
 
 path.to.tx2gene <- file.path(path.to.project.src, "input_data", "salmon_tx2gene.tsv")
 

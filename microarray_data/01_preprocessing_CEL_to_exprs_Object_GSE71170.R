@@ -22,7 +22,7 @@ if ("mogene10sttranscriptcluster.db" %in% installed.packages() == FALSE){
 library(mogene10sttranscriptcluster.db)
 source(file.path(path.to.project.src, "import_libraries.R"))
 PROJECT <- "FHager_datasets"
-output.version <- "20240806"
+output.version <- "20240828"
 
 path.to.storage <- "/media/hieunguyen/HNSD01/storage"
 path.to.main.input <- file.path(path.to.storage, PROJECT)
