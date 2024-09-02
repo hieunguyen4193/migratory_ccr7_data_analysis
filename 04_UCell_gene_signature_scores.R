@@ -42,7 +42,7 @@ all.s.obj <- list()
 config.version <- "v0.1"
 output.version <- "20240828"
 PROJECT <- "FHager_datasets"
-
+sigdf <- hash()
 for (orig.dataset in all.datasets){
   print(sprintf("reading dataset %s in ",orig.dataset))
   input.config <- config.params[[config.version]]
@@ -56,7 +56,7 @@ for (orig.dataset in all.datasets){
     path.to.s.obj <- file.path(path.to.main.output, "01_output", sprintf("%s.rds", dataset.name))
     path.to.04.output <- file.path(path.to.main.output, "04_output")
     dir.create(file.path(path.to.04.output, "04_output"), showWarnings = FALSE, recursive = TRUE)
-  if (file.exists(file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.csv", dataset.name))) == FALSE){
+  if (file.exists(file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.rds", dataset.name))) == FALSE){
       
     path.to.monocle2.input <- file.path(path.to.main.output, "monocle2_inputs")
     dir.create(path.to.monocle2.input, showWarnings = FALSE, recursive = TRUE)
@@ -79,10 +79,51 @@ for (orig.dataset in all.datasets){
     ggsave(plot = violin.plot, filename = sprintf("signatureScore_violinplot_%s.svg", dataset.name), 
            path = file.path(path.to.04.output), device = "svg", width = 14, height = 10, dpi = 300)
     saveRDS(all.s.obj[[dataset.name]]@meta.data %>% rownames_to_column("barcode") %>% as.data.frame(), 
-            file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.csv", dataset.name)))
+            file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.rds", dataset.name)))
   } else {
     print(sprintf("Gene signature score for dataset %s finished", dataset.name))
+    sigdf[[dataset.name]] <- readRDS( file.path(path.to.04.output, sprintf("%s_added_UCell_module_score.rds", dataset.name)))
   }
 }
 
 
+##### check genes in human dataset and compare to mouse dataset
+s.obj.human <- readRDS(file.path(outdir, 
+                                 PROJECT, 
+                                 output.version, 
+                                 "gutcellatlas_myeloid_v0.1", 
+                                 "data_analysis", 
+                                 "01_output", 
+                                 sprintf("%s.rds", "gutcellatlas_myeloid_v0.1")))
+s.obj.mouse <- readRDS(file.path(outdir, 
+                                 PROJECT, 
+                                 output.version, 
+                                 "220907_FH_v0.1", 
+                                 "data_analysis", 
+                                 "01_output", 
+                                 sprintf("%s.rds", "220907_FH_v0.1")))
+cluster9.signature.genes <- readxl::read_excel(file.path(path.to.project.src, "Cluster 9 DEGs.xlsx")) %>% head(20) %>% pull("gene")
+upper.cluster9.signature.genes <- toupper(cluster9.signature.genes)
+
+intersect(upper.cluster9.signature.genes, row.names(s.obj.human))
+
+setdiff(upper.cluster9.signature.genes, row.names(s.obj.human))
+
+##### plot signature scores in different dataset
+selected.clusters <- list(
+  `220907_FH_v0.1` = 9,
+  `integrate_GSE192742_LIVER_v0.1` = 19,
+  `gutcellatlas_myeloid_v0.1` = 17
+)
+
+selected.sigdf <- data.frame()
+for (i in names(selected.clusters)){
+  tmpdf <- sigdf[[i]] %>%
+    subset(select = c(cluster9_UCell, seurat_clusters)) %>%
+    subset(seurat_clusters == selected.clusters[[i]])
+  tmpdf$dataset.name <- i
+  selected.sigdf <- rbind(selected.sigdf,  tmpdf)
+}
+path.to.main.output <- file.path(outdir, PROJECT, output.version)
+p <- ggplot(data = selected.sigdf, aes(x = dataset.name, y = cluster9_UCell, fill = dataset.name)) + geom_violin()
+ggsave(plot = p, filename = "selected_clusters_UCell_SignatureScores.svg", path = path.to.main.output, device = "svg", dpi = 300, width = 14, height = 10)
