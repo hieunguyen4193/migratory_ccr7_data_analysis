@@ -24,8 +24,7 @@ all.datasets <- c("220907_FH",
                   "integrate_GSE192742_LIVER",
                   "gutcellatlas_myeloid",
                   "220907_FH_cDC1",
-                  "220907_FH_cDC2"
-)
+                  "220907_FH_cDC2")
 
 # to solve unable to access index for repository https://mran.microsoft.com/snapshot/2020-07-16/src/contrib
 local({r <- getOption("repos")
