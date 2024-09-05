@@ -34,6 +34,7 @@ s.obj <- subset(s.obj, seurat_clusters %in% c(15, 17, 22))
 num.PCA <- 25
 num.PC.used.in.UMAP <- 25
 num.PC.used.in.Clustering <- 25
+cluster.resolution <- 1
 
 pca_reduction_name <- "RNA_PCA"
 umap_reduction_name <- "RNA_UMAP"
@@ -45,3 +46,7 @@ s.obj <- RunUMAP(s.obj, reduction = pca_reduction_name,
 # clustering 
 s.obj <- FindNeighbors(s.obj, reduction = pca_reduction_name, dims = 1:num.PC.used.in.Clustering)
 s.obj <- FindClusters(s.obj, resolution = cluster.resolution, random.seed = 0)
+
+DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE)
+
+saveRDS(s.obj, file.path(path.to.06.output, sprintf("%s.subset_15_17_22.rds", dataset.name)))
