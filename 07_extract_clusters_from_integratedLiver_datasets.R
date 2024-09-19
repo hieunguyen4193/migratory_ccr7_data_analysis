@@ -74,6 +74,6 @@ if (file.exists(file.path(path.to.07.output, sprintf("%s.subset_%s.rds", dataset
                                                     with.TSNE = FALSE,
                                                     k.filter = 200)
   
-  saveRDS(s.obj, file.path(path.to.07.output, sprintf("%s.subset_%s.rds", dataset.name, paste(selected.clusters, collapse = "_"))))
+  saveRDS(s.obj.integrated, file.path(path.to.07.output, sprintf("%s.subset_%s.rds", dataset.name, paste(selected.clusters, collapse = "_"))))
 }
 
