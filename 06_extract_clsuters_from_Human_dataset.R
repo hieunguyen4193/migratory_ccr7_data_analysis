@@ -26,27 +26,34 @@ path.to.main.output <- file.path(outdir, PROJECT, output.version, dataset.name, 
 path.to.06.output <- file.path(path.to.main.output, "06_output")
 dir.create(path.to.06.output, showWarnings = FALSE, recursive = TRUE)
 
+
 path.to.s.obj <- file.path(path.to.main.output, "01_output", sprintf("%s.rds", dataset.name))
 s.obj <- readRDS(path.to.s.obj)
 DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE)
-s.obj <- subset(s.obj, seurat_clusters %in% c(15, 17, 22))
+# selected.clusters <- c(15, 17, 22)
+selected.clusters <- c(10, 15, 17)
 
-num.PCA <- 25
-num.PC.used.in.UMAP <- 25
-num.PC.used.in.Clustering <- 25
-cluster.resolution <- 1
+if (file.exists(file.path(path.to.06.output, sprintf("%s.subset_%s.rds", dataset.name, paste(selected.clusters, collapse = "_")))) == FALSE){
+  s.obj <- subset(s.obj, seurat_clusters %in% selected.clusters)
+  
+  num.PCA <- 25
+  num.PC.used.in.UMAP <- 25
+  num.PC.used.in.Clustering <- 25
+  cluster.resolution <- 1
+  
+  pca_reduction_name <- "RNA_PCA"
+  umap_reduction_name <- "RNA_UMAP"
+  
+  s.obj <- RunPCA(s.obj, npcs = num.PCA, verbose = FALSE, reduction.name=pca_reduction_name)
+  s.obj <- RunUMAP(s.obj, reduction = pca_reduction_name, 
+                   dims = 1:num.PC.used.in.UMAP, reduction.name=umap_reduction_name,
+                   seed.use = my_random_seed, umap.method = "uwot")
+  # clustering 
+  s.obj <- FindNeighbors(s.obj, reduction = pca_reduction_name, dims = 1:num.PC.used.in.Clustering)
+  s.obj <- FindClusters(s.obj, resolution = cluster.resolution, random.seed = 0)
+  
+  DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE)
+  
+  saveRDS(s.obj, file.path(path.to.06.output, sprintf("%s.subset_%s.rds", dataset.name, paste(selected.clusters, collapse = "_"))))
+}
 
-pca_reduction_name <- "RNA_PCA"
-umap_reduction_name <- "RNA_UMAP"
-
-s.obj <- RunPCA(s.obj, npcs = num.PCA, verbose = FALSE, reduction.name=pca_reduction_name)
-s.obj <- RunUMAP(s.obj, reduction = pca_reduction_name, 
-                 dims = 1:num.PC.used.in.UMAP, reduction.name=umap_reduction_name,
-                 seed.use = my_random_seed, umap.method = "uwot")
-# clustering 
-s.obj <- FindNeighbors(s.obj, reduction = pca_reduction_name, dims = 1:num.PC.used.in.Clustering)
-s.obj <- FindClusters(s.obj, resolution = cluster.resolution, random.seed = 0)
-
-DimPlot(object = s.obj, reduction = "RNA_UMAP", label = TRUE, label.box = TRUE, repel = TRUE)
-
-saveRDS(s.obj, file.path(path.to.06.output, sprintf("%s.subset_15_17_22.rds", dataset.name)))
