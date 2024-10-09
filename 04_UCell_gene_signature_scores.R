@@ -26,7 +26,8 @@ source(file.path(path.to.project.src, "config.R"))
 #####----------------------------------------------------------------------#####
 # CONFIGURATIONS AND PREPRATIONS
 #####----------------------------------------------------------------------#####
-outdir <- "/media/hieunguyen/HNSD01/outdir"
+# outdir <- "/media/hieunguyen/HNSD01/outdir"
+outdir <- "/media/hieunguyen/GSHD_HN01/outdir"
 
 all.datasets <- c("220907_FH",
                   "GSM5764259", 
@@ -111,19 +112,29 @@ setdiff(upper.cluster9.signature.genes, row.names(s.obj.human))
 
 ##### plot signature scores in different dataset
 selected.clusters <- list(
-  `220907_FH_v0.1` = 9,
-  `integrate_GSE192742_LIVER_v0.1` = 19,
-  `gutcellatlas_myeloid_v0.1` = 17
+  `220907_FH_v0.1_nonMig` = setdiff(unique(sigdf$`220907_FH_cDC1_v0.1`$seurat_clusters), c(9)),
+  `220907_FH_v0.1_Mig` = c(9),
+  `integrate_GSE192742_LIVER_v0.1_nonMig` = setdiff(unique(sigdf$integrate_GSE192742_LIVER_v0.1$seurat_clusters), c(19)),
+  `integrate_GSE192742_LIVER_v0.1_Mig` = c(19),
+  `gutcellatlas_myeloid_v0.1_nonMig`= setdiff(unique(sigdf$gutcellatlas_myeloid_v0.1$seurat_clusters), c(17)),
+  `gutcellatlas_myeloid_v0.1_Mig` = c(17)
 )
 
 selected.sigdf <- data.frame()
 for (i in names(selected.clusters)){
-  tmpdf <- sigdf[[i]] %>%
+  if (grepl("nonMig", i) == TRUE){
+    raw.name <- str_replace(i, "_nonMig", "")
+  } else if (grepl("Mig", i) == TRUE){
+    raw.name <- str_replace(i, "_Mig", "")
+  }
+  tmpdf <- sigdf[[raw.name]] %>%
     subset(select = c(cluster9_UCell, seurat_clusters)) %>%
-    subset(seurat_clusters == selected.clusters[[i]])
+    subset(seurat_clusters %in% selected.clusters[[i]])
   tmpdf$dataset.name <- i
   selected.sigdf <- rbind(selected.sigdf,  tmpdf)
 }
 path.to.main.output <- file.path(outdir, PROJECT, output.version)
-p <- ggplot(data = selected.sigdf, aes(x = dataset.name, y = cluster9_UCell, fill = dataset.name)) + geom_violin()
+p <- ggplot(data = selected.sigdf, aes(x = dataset.name, y = cluster9_UCell, fill = dataset.name)) + 
+  geom_violin() + 
+  theme(axis.text.x = element_text(angle = 60, hjust = 0.5, vjust = 0.5))
 ggsave(plot = p, filename = "selected_clusters_UCell_SignatureScores.svg", path = path.to.main.output, device = "svg", dpi = 300, width = 14, height = 10)
